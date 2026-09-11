@@ -6,174 +6,357 @@
     <title>UNAERP Navigator</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
     <style>
-        :root { --unaerp-blue: #001B3D; --unaerp-accent: #0047AB; --unaerp-yellow: #FFC107; }
-        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
-        body, html { height: 100%; width: 100%; overflow: hidden; background-color: #F4F6F9; }
-        #app { width: 100%; height: 100%; display: flex; flex-direction: column; position: relative; }
-        .screen { display: none; flex: 1; flex-direction: column; overflow-y: auto; padding-bottom: 70px; }
+        :root {
+            --unaerp-dark: #0A1E3F;
+            --unaerp-blue: #1A3A6C;
+            --unaerp-accent: #2563EB;
+            --unaerp-yellow: #FFC107;
+            --unaerp-green: #00FF7F;
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Montserrat', sans-serif; -webkit-tap-highlight-color: transparent; }
+        body, html { height: 100%; width: 100%; overflow: hidden; background: #000; }
+        #app { width: 100%; height: 100%; display: flex; flex-direction: column; position: relative; background: #F0F2F5; max-width: 500px; margin: 0 auto; }
+
+        .screen { display: none; flex: 1; flex-direction: column; overflow: hidden; position: relative; }
         .screen.active { display: flex; }
-        .header { background-color: var(--unaerp-blue); color: white; padding: 20px 15px; text-align: center; border-bottom-left-radius: 20px; border-bottom-right-radius: 20px; flex-shrink: 0; }
-        .header h1 { font-size: 22px; font-style: italic; font-weight: 800; }
-        .header p { font-size: 11px; margin-top: 5px; opacity: 0.8; }
-        .search-bar { margin: 15px; position: relative; }
-        .search-bar input { width: 100%; padding: 15px 15px 15px 40px; border: none; border-radius: 10px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); font-size: 14px; }
-        .search-bar i { position: absolute; left: 15px; top: 15px; color: #888; }
-        .grid-categories { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; padding: 0 15px; }
-        .cat-btn { background: white; border: none; padding: 15px 5px; border-radius: 10px; display: flex; flex-direction: column; align-items: center; justify-content: center; box-shadow: 0 2px 5px rgba(0,0,0,0.05); cursor: pointer; }
-        .cat-btn:active { background: #e6e6e6; }
-        .cat-btn i { font-size: 20px; color: var(--unaerp-accent); margin-bottom: 8px; }
-        .cat-btn span { font-size: 10px; font-weight: 600; color: #333; }
-        .btn-location { background-color: var(--unaerp-accent); color: white; border: none; margin: 20px 15px 10px 15px; padding: 15px; border-radius: 10px; font-weight: bold; display: flex; align-items: center; justify-content: center; gap: 10px; cursor: pointer; }
-        .btn-location.recalibrate { background-color: #28a745; }
-        .btn-manual { background-color: var(--unaerp-yellow); color: #333; border: none; margin: 0 15px 20px 15px; padding: 15px; border-radius: 10px; font-weight: bold; display: flex; align-items: center; justify-content: center; gap: 10px; cursor: pointer; }
-        .map-container { flex: 1; position: relative; display: flex; flex-direction: column; }
+
+        /* ========== TELA 1: HOME ========== */
+        #screen-home { background: var(--unaerp-dark); overflow-y: auto; padding-bottom: 80px; }
+        .home-topbar { padding: 20px 20px 0 20px; display: flex; justify-content: flex-end; }
+        .home-topbar i { color: white; font-size: 22px; cursor: pointer; }
+        .home-logo { text-align: center; padding: 5px 20px 20px 20px; }
+        .home-logo h1 { font-size: 34px; font-style: italic; font-weight: 900; letter-spacing: -1px; line-height: 1; color: white; }
+        .home-logo h2 { font-size: 22px; font-weight: 400; color: var(--unaerp-yellow); letter-spacing: 6px; margin-top: 4px; }
+        .home-logo p { font-size: 12px; color: rgba(255,255,255,0.85); margin-top: 20px; line-height: 1.5; max-width: 260px; margin-left: auto; margin-right: auto; }
+        .home-search { margin: 20px; background: white; border-radius: 25px; display: flex; align-items: center; padding: 14px 20px; gap: 12px; }
+        .home-search i { color: #888; font-size: 16px; }
+        .home-search input { border: none; outline: none; flex: 1; font-size: 12px; color: #333; background: transparent; }
+        .home-search input::placeholder { color: #999; font-size: 11px; }
+
+        .grid-categories { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; padding: 0 20px; }
+        .cat-btn { background: white; border: none; border-radius: 8px; padding: 20px 5px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; cursor: pointer; aspect-ratio: 1/1; }
+        .cat-btn:active { background: #f0f0f0; }
+        .cat-btn i { font-size: 22px; color: #222; }
+        .cat-btn span { font-size: 10px; font-weight: 500; color: #222; text-align: center; }
+
+        .btn-location-main { background: var(--unaerp-accent); color: white; border: none; width: calc(100% - 40px); margin: 20px 20px 0 20px; padding: 16px; border-radius: 8px; font-weight: 700; font-size: 13px; display: flex; align-items: center; justify-content: center; gap: 10px; cursor: pointer; }
+        .location-hint { text-align: center; font-size: 10px; color: rgba(255,255,255,0.5); margin-top: 12px; line-height: 1.5; padding: 0 40px 20px; }
+
+        /* ========== BOTTOM NAV ========== */
+        .bottom-nav { position: absolute; bottom: 0; left: 0; right: 0; height: 65px; background: white; display: flex; justify-content: space-around; align-items: center; border-top: 1px solid #e0e0e0; z-index: 2000; padding-bottom: env(safe-area-inset-bottom); }
+        .nav-item { display: flex; flex-direction: column; align-items: center; gap: 4px; color: #999; font-size: 9px; font-weight: 500; cursor: pointer; padding: 6px 12px; flex: 1; }
+        .nav-item i { font-size: 20px; }
+        .nav-item.active { color: var(--unaerp-blue); }
+
+        /* ========== TELA 2: SELECIONAR ========== */
+        #screen-select { background: white; }
+        .screen-header { background: var(--unaerp-dark); color: white; padding: 22px 20px 18px 20px; display: flex; align-items: center; gap: 15px; flex-shrink: 0; }
+        .screen-header i.fa-chevron-left { font-size: 18px; cursor: pointer; }
+        .screen-header h2 { font-size: 15px; font-weight: 700; }
+
+        .select-search { margin: 15px 20px 10px 20px; background: #F0F2F5; border-radius: 20px; display: flex; align-items: center; padding: 12px 18px; gap: 10px; }
+        .select-search i { color: #888; font-size: 14px; }
+        .select-search input { border: none; outline: none; flex: 1; font-size: 12px; background: transparent; font-weight: 500; }
+
+        #destination-list { flex: 1; overflow-y: auto; padding: 5px 0 200px 0; }
+        .dest-item { background: white; padding: 14px 20px; display: flex; align-items: center; gap: 14px; border-bottom: 1px solid #f5f5f5; cursor: pointer; }
+        .dest-item:active { background: #f9f9f9; }
+        .dest-item .icon-box { width: 38px; height: 38px; border-radius: 8px; background: var(--unaerp-accent); display: flex; align-items: center; justify-content: center; color: white; font-size: 16px; flex-shrink: 0; }
+        .dest-item .icon-box.yellow { background: var(--unaerp-yellow); color: #222; }
+        .dest-item .info { flex: 1; }
+        .dest-item .info h4 { font-size: 13px; font-weight: 700; color: #222; margin-bottom: 2px; }
+        .dest-item .info p { font-size: 11px; color: #888; }
+        .dest-item i.fa-chevron-right { color: #ddd; font-size: 12px; }
+
+        .select-preview { position: absolute; bottom: 0; left: 0; right: 0; background: white; padding: 15px 20px 20px 20px; border-top-left-radius: 18px; border-top-right-radius: 18px; box-shadow: 0 -5px 20px rgba(0,0,0,0.08); z-index: 100; display: none; }
+        .select-preview.active { display: block; }
+        .preview-info { display: flex; align-items: center; gap: 14px; margin-bottom: 15px; }
+        .preview-icon { width: 40px; height: 40px; border-radius: 8px; background: var(--unaerp-accent); display: flex; align-items: center; justify-content: center; color: white; font-size: 16px; }
+        .preview-text h4 { font-size: 13px; font-weight: 700; color: #222; }
+        .preview-text p { font-size: 11px; color: #888; margin-top: 2px; }
+        .preview-meta { display: flex; gap: 20px; font-size: 11px; color: #666; margin-bottom: 15px; }
+        .preview-meta span { display: flex; align-items: center; gap: 6px; }
+        .preview-meta i { color: #888; }
+        .btn-tracar { background: var(--unaerp-accent); color: white; border: none; width: 100%; padding: 15px; border-radius: 8px; font-weight: 700; font-size: 13px; cursor: pointer; }
+
+        /* ========== TELA 3: NAVEGAÇÃO ========== */
+        #screen-nav { background: #E5E5E5; }
         .map-view { flex: 1; width: 100%; height: 100%; z-index: 1; }
-        .list-item { background: white; margin: 10px 15px; padding: 15px; border-radius: 10px; display: flex; align-items: center; gap: 15px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); cursor: pointer; }
-        .list-item i { font-size: 24px; color: var(--unaerp-accent); width: 30px; text-align: center; }
-        .list-item div { flex: 1; }
-        .list-item h4 { font-size: 16px; color: #333; }
-        .list-item p { font-size: 12px; color: #777; }
-        .nav-banner-top { position: absolute; top: 10px; left: 10px; right: 10px; background: var(--unaerp-blue); color: white; padding: 15px; border-radius: 10px; z-index: 1000; display: flex; align-items: center; justify-content: space-between; box-shadow: 0 4px 10px rgba(0,0,0,0.3); }
-        .nav-banner-bottom { position: absolute; bottom: 20px; left: 10px; right: 10px; background: white; padding: 15px; border-radius: 10px; z-index: 1000; box-shadow: 0 4px 10px rgba(0,0,0,0.2); display: flex; align-items: center; gap: 15px; }
-        .nav-arrow { font-size: 30px; color: var(--unaerp-accent); }
-        .compass-container { flex: 1; background: #111; display: flex; flex-direction: column; align-items: center; justify-content: center; color: white; position: relative; }
-        .compass-circle { width: 250px; height: 250px; border: 2px solid #333; border-radius: 50%; position: relative; display: flex; align-items: center; justify-content: center; margin-top: 20px; }
-        .compass-arrow { font-size: 60px; color: var(--unaerp-yellow); transition: transform 0.1s linear; }
-        .compass-distance { font-size: 48px; font-weight: bold; margin-bottom: 10px; }
-        .compass-label { font-size: 18px; color: #aaa; margin-bottom: 20px; }
-        .btn-compass-permission { background: var(--unaerp-accent); color: white; border: none; padding: 12px 20px; border-radius: 8px; font-weight: bold; margin-top: 20px; cursor: pointer; display: none; }
-        .bottom-nav { position: absolute; bottom: 0; left: 0; right: 0; height: 60px; background: white; display: flex; justify-content: space-around; align-items: center; border-top: 1px solid #ddd; z-index: 2000; padding-bottom: env(safe-area-inset-bottom); }
-        .nav-item { display: flex; flex-direction: column; align-items: center; color: #888; font-size: 10px; cursor: pointer; }
-        .nav-item.active { color: var(--unaerp-accent); }
-        .nav-item i { font-size: 20px; margin-bottom: 3px; }
-        .btn-back { position: absolute; top: 20px; left: 20px; background: white; border: none; width: 40px; height: 40px; border-radius: 50%; box-shadow: 0 2px 5px rgba(0,0,0,0.2); z-index: 1001; cursor: pointer; display: flex; align-items: center; justify-content: center; }
-        .gps-status { position: absolute; top: 10px; right: 10px; background: white; padding: 6px 12px; border-radius: 20px; font-size: 11px; font-weight: bold; z-index: 1000; box-shadow: 0 2px 5px rgba(0,0,0,0.2); display: none; align-items: center; gap: 6px; }
-        .gps-status .dot { width: 8px; height: 8px; border-radius: 50%; }
-        .gps-good .dot { background: #28a745; } .gps-medium .dot { background: #ffc107; } .gps-bad .dot { background: #dc3545; }
-        .info-badge { background: #FFF3CD; color: #856404; padding: 10px 12px; border-radius: 8px; margin: 10px 15px 0 15px; font-size: 11px; display: flex; align-items: center; gap: 8px; }
+
+        .nav-header { position: absolute; top: 15px; left: 15px; right: 15px; background: var(--unaerp-dark); color: white; border-radius: 12px; padding: 15px; z-index: 1000; display: flex; align-items: center; justify-content: space-between; box-shadow: 0 4px 15px rgba(0,0,0,0.25); }
+        .nav-header .left { display: flex; align-items: center; gap: 12px; }
+        .nav-header .arrow-up { width: 42px; height: 42px; border-radius: 10px; background: var(--unaerp-accent); display: flex; align-items: center; justify-content: center; font-size: 18px; }
+        .nav-header .left-info h3 { font-size: 13px; font-weight: 700; }
+        .nav-header .left-info p { font-size: 10px; opacity: 0.7; margin-top: 3px; }
+        .nav-header .right-info { text-align: right; }
+        .nav-header .right-info .chegada-label { font-size: 10px; opacity: 0.7; }
+        .nav-header .right-info h4 { font-size: 15px; font-weight: 800; margin-top: 2px; }
+        .nav-header .right-info p { font-size: 10px; opacity: 0.7; margin-top: 2px; }
+
+        .nav-footer { position: absolute; bottom: 80px; left: 15px; right: 15px; background: white; border-radius: 12px; padding: 15px; z-index: 1000; box-shadow: 0 4px 15px rgba(0,0,0,0.15); }
+        .nav-footer-top { display: flex; align-items: center; gap: 14px; }
+        .nav-footer .turn-icon { width: 44px; height: 44px; border-radius: 10px; background: var(--unaerp-dark); display: flex; align-items: center; justify-content: center; color: white; font-size: 20px; flex-shrink: 0; }
+        .nav-footer .turn-text h4 { font-size: 14px; font-weight: 700; color: #222; }
+        .nav-footer .turn-text p { font-size: 11px; color: #888; margin-top: 2px; }
+        .progress-bar { height: 4px; background: #e5e5e5; border-radius: 2px; margin-top: 12px; overflow: hidden; }
+        .progress-bar .fill { height: 100%; background: var(--unaerp-accent); width: 40%; border-radius: 2px; }
+        .step-counter { display: flex; justify-content: space-between; font-size: 10px; color: #999; margin-top: 6px; }
+        .btn-back-nav { position: absolute; top: 15px; left: 15px; background: white; border: none; width: 40px; height: 40px; border-radius: 50%; box-shadow: 0 2px 8px rgba(0,0,0,0.2); z-index: 1001; cursor: pointer; display: none; align-items: center; justify-content: center; }
+        .nav-footer { top: auto; }
         
-        /* POPUP DE SNAP (Você está no Bloco A?) */
-        .snap-popup { position: absolute; bottom: 80px; left: 15px; right: 15px; background: white; padding: 18px; border-radius: 12px; z-index: 1500; box-shadow: 0 6px 20px rgba(0,0,0,0.3); display: none; animation: slideUp 0.3s ease; }
-        .snap-popup.active { display: block; }
-        .snap-popup h4 { font-size: 15px; color: #333; margin-bottom: 5px; }
-        .snap-popup p { font-size: 12px; color: #666; margin-bottom: 15px; }
-        .snap-popup .buttons { display: flex; gap: 10px; }
-        .snap-popup button { flex: 1; padding: 12px; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 14px; }
-        .snap-popup .btn-sim { background: var(--unaerp-accent); color: white; }
-        .snap-popup .btn-nao { background: #eee; color: #666; }
-        @keyframes slideUp { from { transform: translateY(50px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
-        
-        .leaflet-control-attribution { font-size: 8px; }
+        /* Botão de recentralizar */
+        .btn-recenter { position: absolute; bottom: 200px; right: 20px; z-index: 1000; background: white; width: 45px; height: 45px; border-radius: 50%; border: none; box-shadow: 0 3px 10px rgba(0,0,0,0.2); cursor: pointer; color: var(--unaerp-accent); font-size: 18px; }
+
+        /* ========== TELA 4: BÚSSOLA ========== */
+        #screen-compass { background: #0a0a0a; color: white; }
+        .compass-screen { flex: 1; display: flex; flex-direction: column; overflow-y: auto; }
+        .compass-header { padding: 25px 22px 15px 22px; display: flex; align-items: flex-start; justify-content: space-between; }
+        .compass-header-left { display: flex; align-items: center; gap: 14px; }
+        .compass-header-left .icon-circle { width: 46px; height: 46px; border-radius: 12px; background: var(--unaerp-accent); display: flex; align-items: center; justify-content: center; font-size: 20px; color: white; }
+        .compass-header-left h3 { font-size: 14px; font-weight: 700; }
+        .compass-header-left p { font-size: 11px; opacity: 0.5; margin-top: 3px; }
+        .compass-header .btn-close { background: transparent; border: none; color: white; font-size: 20px; cursor: pointer; padding: 5px; }
+
+        .compass-distance-block { padding: 20px 22px 10px 22px; }
+        .compass-distance-block .big-distance { font-size: 52px; font-weight: 800; line-height: 1; letter-spacing: -2px; }
+        .compass-distance-block .distance-label { font-size: 13px; color: rgba(255,255,255,0.5); margin-top: 8px; }
+
+        .compass-circle-wrapper { flex: 1; display: flex; align-items: center; justify-content: center; padding: 10px; min-height: 320px; }
+        .compass-circle { width: 260px; height: 260px; border-radius: 50%; border: 1px solid #222; position: relative; display: flex; align-items: center; justify-content: center; background: #0a0a0a; }
+        .compass-circle .cardinal { position: absolute; font-size: 12px; font-weight: 500; color: rgba(255,255,255,0.35); }
+        .compass-circle .n { top: 12px; } .compass-circle .s { bottom: 12px; }
+        .compass-circle .o { left: 12px; } .compass-circle .l { right: 12px; }
+
+        .compass-arrow-wrapper { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 70px; height: 70px; display: flex; align-items: center; justify-content: center; }
+        .compass-arrow-svg { width: 70px; height: 70px; transition: transform 0.15s linear; filter: drop-shadow(0 0 12px rgba(0,255,127,0.6)); }
+        .compass-target-dot { position: absolute; width: 12px; height: 12px; border-radius: 50%; background: var(--unaerp-green); top: 30px; left: 50%; transform: translateX(-50%); box-shadow: 0 0 15px rgba(0,255,127,0.6); }
+
+        .compass-bottom-banner { background: #1a1a1a; padding: 16px 22px 20px 22px; border-top-left-radius: 16px; border-top-right-radius: 16px; display: flex; align-items: center; gap: 14px; }
+        .compass-bottom-banner .turn-icon { width: 40px; height: 40px; border-radius: 10px; background: rgba(255,255,255,0.08); display: flex; align-items: center; justify-content: center; font-size: 18px; }
+        .compass-bottom-banner .text h4 { font-size: 14px; font-weight: 700; }
+        .compass-bottom-banner .text p { font-size: 11px; color: rgba(255,255,255,0.5); margin-top: 2px; }
+
+        .btn-compass-permission { position: absolute; bottom: 110px; left: 50%; transform: translateX(-50%); background: var(--unaerp-accent); color: white; border: none; padding: 11px 22px; border-radius: 20px; font-weight: 700; font-size: 12px; cursor: pointer; display: none; white-space: nowrap; }
+
+        /* ========== TELA 5: MAPA COMPLETO ========== */
+        #screen-fullmap { background: white; overflow: hidden; }
+        .fullmap-header { background: var(--unaerp-dark); color: white; padding: 22px 20px 18px 20px; display: flex; align-items: center; gap: 15px; flex-shrink: 0; }
+        .fullmap-header i { font-size: 18px; cursor: pointer; }
+        .fullmap-header h2 { font-size: 15px; font-weight: 700; }
+        .fullmap-body { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
+        #map-full { flex: 1; min-height: 45%; width: 100%; z-index: 1; }
+        .fullmap-list { background: white; padding: 18px 20px 90px 20px; flex: 1; overflow-y: auto; }
+        .fullmap-list h3 { font-size: 13px; font-weight: 700; margin-bottom: 14px; color: #222; }
+        .loc-entry { display: flex; gap: 12px; padding: 6px 0; font-size: 11px; color: #333; align-items: flex-start; }
+        .loc-entry .num { font-weight: 800; color: var(--unaerp-yellow); min-width: 22px; background: var(--unaerp-dark); text-align: center; padding: 1px 3px; border-radius: 3px; font-size: 9px; margin-top: 2px; }
+
+        .toast { position: fixed; top: 20px; left: 50%; transform: translateX(-50%); background: rgba(0,0,0,0.9); color: white; padding: 12px 20px; border-radius: 25px; font-size: 12px; z-index: 9999; opacity: 0; transition: opacity 0.3s; pointer-events: none; max-width: 90%; text-align: center; }
+        .toast.show { opacity: 1; }
+        .leaflet-control-attribution { font-size: 7px; opacity: 0.7; }
     </style>
 </head>
 <body>
 
 <div id="app">
-    <!-- TELA 1: HOME -->
+    <!-- ============ TELA 1: HOME ============ -->
     <div id="screen-home" class="screen active">
-        <div class="header">
-            <h1>UNAERP NAVIGATOR</h1>
+        <div class="home-topbar"><i class="fas fa-bars"></i></div>
+        <div class="home-logo">
+            <h1>UNAERP</h1>
+            <h2>NAVIGATOR</h2>
             <p>Encontre o seu destino no campus com facilidade.</p>
         </div>
-        <div class="search-bar">
+        <div class="home-search">
             <i class="fas fa-search"></i>
-            <input type="text" placeholder="Buscar um local..." id="search-input">
+            <input type="text" placeholder="Buscar um local (ex: Biblioteca, Bloco E...)" id="search-input">
         </div>
         <div class="grid-categories">
             <button class="cat-btn" onclick="filterCategory('Blocos')"><i class="fas fa-building"></i><span>Blocos</span></button>
             <button class="cat-btn" onclick="filterCategory('Biblioteca')"><i class="fas fa-book"></i><span>Biblioteca</span></button>
+            <button class="cat-btn" onclick="filterCategory('Salas')"><i class="fas fa-graduation-cap"></i><span>Salas de Aula</span></button>
             <button class="cat-btn" onclick="filterCategory('Restaurante')"><i class="fas fa-utensils"></i><span>Restaurante</span></button>
             <button class="cat-btn" onclick="filterCategory('Hospital')"><i class="fas fa-hospital"></i><span>Hospital</span></button>
-            <button class="cat-btn" onclick="filterCategory('Praça')"><i class="fas fa-tree"></i><span>Praça</span></button>
+            <button class="cat-btn" onclick="filterCategory('Quadras')"><i class="fas fa-futbol"></i><span>Quadras</span></button>
+            <button class="cat-btn" onclick="filterCategory('Academia')"><i class="fas fa-dumbbell"></i><span>Academia</span></button>
+            <button class="cat-btn" onclick="filterCategory('Transporte')"><i class="fas fa-bus"></i><span>Transporte</span></button>
+            <button class="cat-btn" onclick="filterCategory('Outros')"><i class="fas fa-ellipsis-h"></i><span>Outros</span></button>
         </div>
-        <div class="info-badge">
-            <i class="fas fa-info-circle"></i>
-            <span>Dentro de prédios o GPS erra. Use o botão amarelo para marcar seu local manualmente.</span>
-        </div>
-        <button class="btn-location" id="btn-location" onclick="startTracking()">
-            <i class="fas fa-location-arrow"></i> Usar GPS do celular
+        <button class="btn-location-main" onclick="startTracking()">
+            <i class="fas fa-location-arrow"></i> Usar minha localização
         </button>
-        <button class="btn-manual" onclick="openManualLocation()">
-            <i class="fas fa-hand-pointer"></i> Estou em... (seleção manual)
-        </button>
+        <p class="location-hint">Permita o acesso ao GPS para ver sua posição no mapa.</p>
     </div>
 
-    <!-- TELA 2: SELEÇÃO -->
+    <!-- ============ TELA 2: SELECIONAR ============ -->
     <div id="screen-select" class="screen">
-        <div class="header" style="padding: 15px; border-radius: 0; display: flex; align-items: center;">
-            <i class="fas fa-chevron-left" onclick="switchScreen('screen-home')" style="cursor: pointer; margin-right: 15px; font-size: 18px;"></i>
-            <h2 style="font-size: 16px;" id="select-title">Selecionar destino</h2>
+        <div class="screen-header">
+            <i class="fas fa-chevron-left" onclick="switchScreen('screen-home')"></i>
+            <h2 id="select-title">Selecionar destino</h2>
         </div>
-        <div id="destination-list" style="padding-bottom: 20px;"></div>
+        <div class="select-search">
+            <i class="fas fa-search"></i>
+            <input type="text" placeholder="Biblioteca" id="select-search-input">
+        </div>
+        <div id="destination-list"></div>
+        <div class="select-preview" id="select-preview">
+            <div class="preview-info">
+                <div class="preview-icon"><i class="fas fa-book" id="preview-icon-i"></i></div>
+                <div class="preview-text">
+                    <h4 id="preview-name">Biblioteca</h4>
+                    <p id="preview-desc">Bloco E - 1º andar</p>
+                </div>
+            </div>
+            <div class="preview-meta">
+                <span><i class="far fa-clock"></i> <span id="preview-time">-- min</span></span>
+                <span><i class="fas fa-route"></i> <span id="preview-dist">-- m</span></span>
+            </div>
+            <button class="btn-tracar" onclick="tracarRota()">Traçar rota</button>
+        </div>
     </div>
 
-    <!-- TELA 3: MAPA -->
+    <!-- ============ TELA 3: NAVEGAÇÃO ============ -->
     <div id="screen-nav" class="screen">
-        <div class="map-container">
-            <div id="map-nav" class="map-view"></div>
-            <button class="btn-back" onclick="switchScreen('screen-home')"><i class="fas fa-times"></i></button>
-            <div class="gps-status" id="gps-status"><span class="dot"></span><span id="gps-text">GPS: --</span></div>
-            
-            <!-- POPUP DE SNAP -->
-            <div class="snap-popup" id="snap-popup">
-                <h4 id="snap-title">Você está no Bloco A?</h4>
-                <p id="snap-desc">Detectamos que você está perto do Bloco A - Reitoria.</p>
-                <div class="buttons">
-                    <button class="btn-nao" onclick="dismissSnap()">Não, continuar com GPS</button>
-                    <button class="btn-sim" onclick="confirmSnap()">Sim, estou aqui!</button>
+        <div class="map-view" id="map-nav"></div>
+        <div class="nav-header">
+            <div class="left">
+                <div class="arrow-up"><i class="fas fa-arrow-up"></i></div>
+                <div class="left-info">
+                    <h3 id="nav-instruction">Siga em frente</h3>
+                    <p id="nav-distance">300 m</p>
                 </div>
             </div>
-
-            <div class="nav-banner-top">
-                <div>
-                    <h3 style="font-size: 14px;" id="nav-instruction">Rota calculada</h3>
-                    <p style="font-size: 11px; opacity: 0.8;" id="nav-distance">Calculando...</p>
-                </div>
-                <div style="text-align: right;"><h4 style="font-size: 14px;" id="nav-time">-- min</h4></div>
-            </div>
-            <div class="nav-banner-bottom">
-                <i class="fas fa-route nav-arrow"></i>
-                <div>
-                    <h4 style="font-size: 14px; color: #333;" id="nav-action">Origem: --</h4>
-                    <p style="font-size: 11px; color: #777;" id="nav-action-dist">-- m</p>
-                </div>
+            <div class="right-info">
+                <span class="chegada-label">Chegada em</span>
+                <h4 id="nav-time">-- min</h4>
+                <p id="nav-total">-- m</p>
             </div>
         </div>
+        <button class="btn-recenter" onclick="recenterMap()"><i class="fas fa-crosshairs"></i></button>
+        <div class="nav-footer">
+            <div class="nav-footer-top">
+                <div class="turn-icon"><i class="fas fa-arrow-right" id="nav-turn-icon"></i></div>
+                <div class="turn-text">
+                    <h4 id="nav-action">Vire à direita</h4>
+                    <p id="nav-action-dist">-- m</p>
+                </div>
+            </div>
+            <div class="progress-bar"><div class="fill" id="nav-progress"></div></div>
+            <div class="step-counter">
+                <span id="nav-step">1/1</span>
+                <span id="nav-remaining">Continue em frente</span>
+            </div>
+        </div>
+        <button class="btn-back-nav" style="display: flex;" onclick="switchScreen('screen-home')"><i class="fas fa-times"></i></button>
     </div>
 
-    <!-- TELA 4: BÚSSOLA -->
+    <!-- ============ TELA 4: BÚSSOLA ============ -->
     <div id="screen-compass" class="screen">
-        <div class="compass-container">
-            <button class="btn-back" style="background: #333; color: white;" onclick="switchScreen('screen-nav')"><i class="fas fa-arrow-left"></i></button>
-            <h2 style="margin-bottom: 20px; font-size: 18px;" id="compass-dest-name">Destino</h2>
-            <div class="compass-distance" id="compass-distance">0 m</div>
-            <div class="compass-label">à sua frente</div>
-            <div class="compass-circle"><i class="fas fa-location-arrow compass-arrow" id="compass-arrow"></i></div>
+        <div class="compass-screen">
+            <div class="compass-header">
+                <div class="compass-header-left">
+                    <div class="icon-circle"><i class="fas fa-book" id="compass-icon"></i></div>
+                    <div>
+                        <h3 id="compass-dest-name">Escolha um destino</h3>
+                        <p id="compass-dest-desc">Nenhum destino selecionado</p>
+                    </div>
+                </div>
+                <button class="btn-close" onclick="switchScreen('screen-nav')"><i class="fas fa-times"></i></button>
+            </div>
+            <div class="compass-distance-block">
+                <div class="big-distance" id="compass-distance">-- m</div>
+                <div class="distance-label" id="compass-label">aguardando destino</div>
+            </div>
+            <div class="compass-circle-wrapper">
+                <div class="compass-circle">
+                    <div class="compass-target-dot"></div>
+                    <div class="cardinal n">N</div>
+                    <div class="cardinal s">S</div>
+                    <div class="cardinal o">O</div>
+                    <div class="cardinal l">L</div>
+                    <div class="compass-arrow-wrapper">
+                        <svg class="compass-arrow-svg" id="compass-arrow" viewBox="0 0 100 100">
+                            <path d="M50 8 L62 40 L54 42 L54 78 L46 78 L46 42 L38 40 Z" fill="#00FF7F"/>
+                        </svg>
+                    </div>
+                </div>
+            </div>
             <button class="btn-compass-permission" id="btn-permission" onclick="requestCompassPermission()">Ativar Bússola</button>
-            <p style="margin-top: 20px; font-size: 12px; color: #888; text-align: center; padding: 0 20px;">Aponte o celular. A seta amarela aponta para o destino.</p>
+            <div class="compass-bottom-banner">
+                <div class="turn-icon"><i class="fas fa-arrow-up"></i></div>
+                <div class="text">
+                    <h4 id="compass-action">Continue em frente</h4>
+                    <p id="compass-action-dist">-- m</p>
+                </div>
+            </div>
         </div>
     </div>
 
-    <!-- NAV -->
-    <div class="bottom-nav">
-        <div class="nav-item active" onclick="switchScreen('screen-home')"><i class="fas fa-home"></i><span>Início</span></div>
-        <div class="nav-item" onclick="switchScreen('screen-nav')"><i class="fas fa-map"></i><span>Mapa</span></div>
-        <div class="nav-item" onclick="switchScreen('screen-compass')"><i class="fas fa-compass"></i><span>Bússola</span></div>
+    <!-- ============ TELA 5: MAPA COMPLETO ============ -->
+    <div id="screen-fullmap" class="screen">
+        <div class="fullmap-header">
+            <i class="fas fa-chevron-left" onclick="switchScreen('screen-home')"></i>
+            <h2>Mapa do Campus</h2>
+        </div>
+        <div class="fullmap-body">
+            <div id="map-full"></div>
+            <div class="fullmap-list">
+                <h3>Locais do campus</h3>
+                <div id="fullmap-list-content"></div>
+            </div>
+        </div>
+        <div class="bottom-nav">
+            <div class="nav-item" onclick="switchScreen('screen-home')"><i class="fas fa-home"></i><span>Início</span></div>
+            <div class="nav-item active" onclick="switchScreen('screen-fullmap')"><i class="fas fa-map"></i><span>Mapa</span></div>
+            <div class="nav-item" onclick="toast('Favoritos em breve')"><i class="fas fa-star"></i><span>Favoritos</span></div>
+            <div class="nav-item" onclick="toast('Configurações em breve')"><i class="fas fa-cog"></i><span>Configurações</span></div>
+        </div>
     </div>
+
+    <!-- NAV inferior (home) -->
+    <div class="bottom-nav" id="home-bottom-nav" style="display: flex;">
+        <div class="nav-item active" onclick="switchScreen('screen-home')"><i class="fas fa-home"></i><span>Início</span></div>
+        <div class="nav-item" onclick="switchScreen('screen-fullmap')"><i class="fas fa-map"></i><span>Mapa</span></div>
+        <div class="nav-item" onclick="toast('Favoritos em breve')"><i class="fas fa-star"></i><span>Favoritos</span></div>
+        <div class="nav-item" onclick="toast('Configurações em breve')"><i class="fas fa-cog"></i><span>Configurações</span></div>
+    </div>
+
+    <div class="toast" id="toast"></div>
 </div>
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
     // ============================================================
-    // MALHA DE CALÇADAS (Grafo de caminhos do campus)
+    // DADOS DO CAMPUS (GPS real)
+    // ============================================================
+    const buildings = [
+        { id:'A',  name:"Bloco A - Reitoria",           cat:"Blocos",      lat: -21.202398, lng: -47.779552, desc: "Reitoria e Registros Acadêmicos", icon: 'fa-building' },
+        { id:'B',  name:"Bloco B - Multiatendimento",   cat:"Blocos",      lat: -21.202803, lng: -47.779707, desc: "Financeiro e Benefícios", icon: 'fa-building' },
+        { id:'C',  name:"Bloco C - Centro de Benefícios", cat:"Blocos",    lat: -21.201472, lng: -47.779825, desc: "Benefícios e Capela", icon: 'fa-building' },
+        { id:'D',  name:"Bloco D - Centro de Convivência", cat:"Blocos",   lat: -21.201611, lng: -47.778534, desc: "Convivência", icon: 'fa-building' },
+        { id:'E',  name:"Biblioteca (Bloco E)",         cat:"Biblioteca",  lat: -21.201356, lng: -47.778443, desc: "Bloco E - 1º andar", icon: 'fa-book' },
+        { id:'F',  name:"Bloco F - Teatro",             cat:"Blocos",      lat: -21.200865, lng: -47.778373, desc: "Teatro Bassano Vaccarini", icon: 'fa-theater-masks' },
+        { id:'G',  name:"Bloco G - DCINI",              cat:"Blocos",      lat: -21.202758, lng: -47.778645, desc: "Cooperação Internacional", icon: 'fa-building' },
+        { id:'H',  name:"Bloco H - Cursos e Labs",      cat:"Blocos",      lat: -21.202868, lng: -47.779203, desc: "Salas de aula e laboratórios", icon: 'fa-flask' },
+        { id:'HOSP',name:"Hospital Electro Bonini",     cat:"Hospital",    lat: -21.201121, lng: -47.779977, desc: "Bloco N", icon: 'fa-hospital' },
+        { id:'K',  name:"Bloco K - Salas de Tutoria",   cat:"Blocos",      lat: -21.202236, lng: -47.778506, desc: "Tutoria - Medicina", icon: 'fa-graduation-cap' },
+        { id:'O',  name:"Bloco O - Suprimentos",        cat:"Blocos",      lat: -21.201896, lng: -47.778527, desc: "Suprimentos e Infraestrutura", icon: 'fa-boxes' },
+        { id:'S',  name:"Bloco S",                      cat:"Blocos",      lat: -21.201306, lng: -47.779291, desc: "Bloco S", icon: 'fa-building' },
+        { id:'RU', name:"Restaurante Universitário",    cat:"Restaurante", lat: -21.200725, lng: -47.779017, desc: "Bloco L", icon: 'fa-utensils' },
+        { id:'praca',name:"Praça Central",              cat:"Outros",      lat: -21.201819, lng: -47.779230, desc: "Praça de Alimentação", icon: 'fa-tree' }
+    ];
+
+    // ============================================================
+    // MALHA DE CALÇADAS (em GPS real)
     // ============================================================
     const pathGraph = {
         nodes: {
-            'praca': { lat: -21.201819, lng: -47.779230, name: 'Praça Central' },
-            'sj':    { lat: -21.202500, lng: -47.779400, name: 'Cruzamento Sul' },
-            'ej':    { lat: -21.201900, lng: -47.778700, name: 'Cruzamento Leste' },
-            'nj':    { lat: -21.201300, lng: -47.779600, name: 'Cruzamento Norte' },
+            'entrada': { lat: -21.202500, lng: -47.779700, name: 'Entrada Principal' },
+            'praca':   { lat: -21.201819, lng: -47.779230, name: 'Praça Central' },
+            'cruzS':   { lat: -21.202500, lng: -47.779400, name: 'Cruzamento Sul' },
+            'cruzL':   { lat: -21.201900, lng: -47.778700, name: 'Cruzamento Leste' },
+            'cruzN':   { lat: -21.201300, lng: -47.779600, name: 'Cruzamento Norte' },
             'A':   { lat: -21.202398, lng: -47.779552, name: 'Bloco A' },
             'B':   { lat: -21.202803, lng: -47.779707, name: 'Bloco B' },
             'C':   { lat: -21.201472, lng: -47.779825, name: 'Bloco C' },
@@ -189,228 +372,163 @@
             'RU':  { lat: -21.200725, lng: -47.779017, name: 'Restaurante' }
         },
         edges: [
-            ['praca','sj'],['praca','ej'],['praca','nj'],['praca','S'],
-            ['sj','A'],['sj','H'],['sj','B'],
-            ['ej','K'],['ej','G'],['ej','O'],['ej','D'],
-            ['nj','C'],['nj','HOSP'],
-            ['S','C'],['S','RU'],['C','HOSP'],
+            ['entrada','cruzS'],['entrada','B'],
+            ['cruzS','A'],['cruzS','praca'],
+            ['praca','cruzL'],['praca','cruzN'],['praca','S'],
+            ['cruzL','E'],['cruzL','G'],['cruzL','D'],['cruzL','K'],
+            ['cruzN','C'],['cruzN','HOSP'],['cruzN','H'],
             ['D','E'],['E','F'],
-            ['K','G'],['G','H'],['O','K']
+            ['G','H'],['G','RU'],['H','O'],['O','K'],
+            ['S','C'],['S','RU']
         ]
     };
-
-    const buildings = [
-        { id:'A',  name:"Bloco A - Reitoria",           cat:"Blocos",      lat: -21.202398, lng: -47.779552, desc: "Reitoria e Registros Acadêmicos" },
-        { id:'B',  name:"Bloco B - Multiatendimento",   cat:"Blocos",      lat: -21.202803, lng: -47.779707, desc: "Financeiro e Benefícios" },
-        { id:'C',  name:"Bloco C - Centro de Benefícios", cat:"Blocos",    lat: -21.201472, lng: -47.779825, desc: "Benefícios e Capela" },
-        { id:'D',  name:"Bloco D - Centro de Convivência", cat:"Blocos",   lat: -21.201611, lng: -47.778534, desc: "Convivência" },
-        { id:'E',  name:"Biblioteca (Bloco E)",         cat:"Biblioteca",  lat: -21.201356, lng: -47.778443, desc: "Biblioteca Central - 1º andar" },
-        { id:'F',  name:"Bloco F - Teatro",             cat:"Blocos",      lat: -21.200865, lng: -47.778373, desc: "Teatro Bassano Vaccarini" },
-        { id:'G',  name:"Bloco G - DCINI",              cat:"Blocos",      lat: -21.202758, lng: -47.778645, desc: "Cooperação Nacional e Internacional" },
-        { id:'H',  name:"Bloco H - Cursos e Labs",      cat:"Blocos",      lat: -21.202868, lng: -47.779203, desc: "Salas de aula e laboratórios" },
-        { id:'HOSP',name:"Hospital Electro Bonini",     cat:"Hospital",    lat: -21.201121, lng: -47.779977, desc: "Hospital Universitário" },
-        { id:'K',  name:"Bloco K - Salas de Tutoria",   cat:"Blocos",      lat: -21.202236, lng: -47.778506, desc: "Tutoria - Curso de Medicina" },
-        { id:'O',  name:"Bloco O - Suprimentos",        cat:"Blocos",      lat: -21.201896, lng: -47.778527, desc: "Suprimentos e Infraestrutura" },
-        { id:'S',  name:"Bloco S",                      cat:"Blocos",      lat: -21.201306, lng: -47.779291, desc: "Bloco S" },
-        { id:'RU', name:"Restaurante Universitário",    cat:"Restaurante", lat: -21.200725, lng: -47.779017, desc: "RU / Bloco L" },
-        { id:'praca',name:"Praça Central",              cat:"Praça",       lat: -21.201819, lng: -47.779230, desc: "Praça de Alimentação" }
-    ];
 
     // ============================================================
     // VARIÁVEIS
     // ============================================================
-    let mapNav;
+    let mapNav, mapFull;
     let userLat = null, userLng = null, userAccuracy = null;
     let userMarker = null, accuracyCircle = null;
-    let destLat = null, destLng = null, destId = null;
+    let destLat = null, destLng = null, destId = null, destName = null, destDesc = null, destIcon = null;
     let routeLayer = null, destMarker = null;
     let startNodeId = null;
     let startMode = null;
     let isCompassActive = false;
     let watchId = null;
-    let snapCandidate = null; // Guarda o prédio sugerido no snap
-    let snapDismissedFor = null; // Prédio que o usuário já recusou
+    let lastHeading = 0;
+    let userMoved = false;
 
     const defaultCenter = [-21.2019, -47.7791];
-    const ACCURACY_THRESHOLD = 30;
-    const SNAP_DISTANCE = 60; // metros - se GPS está a menos de 60m de um prédio, sugere snap
+    const ACCURACY_THRESHOLD = 40;
 
     // ============================================================
-    // INICIALIZAÇÃO
+    // INICIALIZAÇÃO DOS MAPAS (usando mapa real OpenStreetMap)
     // ============================================================
     function initMaps() {
+        // Mapa de Navegação
         mapNav = L.map('map-nav', { zoomControl: false, preferCanvas: true }).setView(defaultCenter, 17);
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-            maxZoom: 19, attribution: '© OpenStreetMap'
+            maxZoom: 19, attribution: '© OSM'
         }).addTo(mapNav);
 
-        // Desenha calçadas (linhas cinzas)
+        // Calçadas em cinza (opcional - mostra os caminhos)
         pathGraph.edges.forEach(edge => {
             const n1 = pathGraph.nodes[edge[0]];
             const n2 = pathGraph.nodes[edge[1]];
             L.polyline([[n1.lat,n1.lng],[n2.lat,n2.lng]], {
-                color: '#aaa', weight: 3, opacity: 0.5, dashArray: '5,5'
+                color: '#ccc', weight: 3, opacity: 0.5, dashArray: '5,5'
             }).addTo(mapNav);
         });
 
+        // Marcadores dos prédios
         buildings.forEach(loc => {
-            L.marker([loc.lat, loc.lng]).addTo(mapNav)
-                .bindPopup(`<b>${loc.name}</b><br>${loc.desc}`);
+            L.marker([loc.lat, loc.lng]).addTo(mapNav).bindPopup(`<b>${loc.name}</b><br>${loc.desc}`);
+        });
+
+        // Mapa completo
+        mapFull = L.map('map-full', { zoomControl: false }).setView(defaultCenter, 16);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            maxZoom: 19, attribution: '© OSM'
+        }).addTo(mapFull);
+
+        buildings.forEach(loc => {
+            L.marker([loc.lat, loc.lng]).addTo(mapFull).bindPopup(`<b>${loc.name}</b><br>${loc.desc}`);
         });
     }
 
     function switchScreen(screenId) {
         document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
         document.getElementById(screenId).classList.add('active');
-        document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
-        if (screenId === 'screen-home')    document.querySelectorAll('.nav-item')[0].classList.add('active');
-        if (screenId === 'screen-nav')     document.querySelectorAll('.nav-item')[1].classList.add('active');
-        if (screenId === 'screen-compass') { document.querySelectorAll('.nav-item')[2].classList.add('active'); checkCompassPermission(); }
-        setTimeout(() => { if (mapNav) mapNav.invalidateSize(); }, 200);
+
+        const globalNav = document.getElementById('home-bottom-nav');
+        globalNav.style.display = screenId === 'screen-home' ? 'flex' : 'none';
+
+        if (screenId === 'screen-compass') checkCompassPermission();
+
+        setTimeout(() => {
+            if (screenId === 'screen-nav' && mapNav) mapNav.invalidateSize();
+            if (screenId === 'screen-fullmap' && mapFull) mapFull.invalidateSize();
+        }, 200);
+    }
+
+    function toast(msg) {
+        const t = document.getElementById('toast');
+        t.textContent = msg;
+        t.classList.add('show');
+        setTimeout(() => t.classList.remove('show'), 2000);
     }
 
     // ============================================================
-    // GPS COM SNAP AUTOMÁTICO
+    // GPS EM TEMPO REAL
     // ============================================================
     function startTracking() {
-        if (!navigator.geolocation) { alert("GPS não suportado."); return; }
-        const btn = document.getElementById('btn-location');
-        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Obtendo sinal...';
+        if (!navigator.geolocation) { toast("GPS não suportado"); return; }
+        toast("Obtendo sinal GPS...");
 
         navigator.geolocation.getCurrentPosition(
             (pos) => handlePosition(pos, true),
-            (err) => console.error(err),
+            (err) => {
+                let msg = "Erro GPS: ";
+                if (err.code === 1) msg += "Permissão negada";
+                if (err.code === 2) msg += "Sinal indisponível";
+                if (err.code === 3) msg += "Tempo esgotado";
+                toast(msg);
+            },
             { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 }
         );
 
         if (watchId) navigator.geolocation.clearWatch(watchId);
         watchId = navigator.geolocation.watchPosition(
             (pos) => handlePosition(pos, false),
-            (err) => { document.getElementById('gps-text').innerText = "Sem sinal GPS"; },
+            (err) => console.error(err),
             { enableHighAccuracy: true, maximumAge: 2000, timeout: 15000 }
         );
     }
 
     function handlePosition(position, isInitial) {
         const accuracy = position.coords.accuracy;
-        if (!isInitial && accuracy > ACCURACY_THRESHOLD) { updateGpsStatus(accuracy, false); return; }
+        if (!isInitial && accuracy > ACCURACY_THRESHOLD) return;
 
         userLat = position.coords.latitude;
         userLng = position.coords.longitude;
         userAccuracy = accuracy;
         startMode = 'gps';
 
-        // SNAP: Encontra o nó mais próximo do grafo
+        // Snap para o nó mais próximo
         const nearest = findNearestNode(userLat, userLng);
         startNodeId = nearest.id;
 
-        updateGpsStatus(accuracy, true);
-        document.getElementById('btn-location').innerHTML = '<i class="fas fa-check"></i> GPS Ativo';
+        toast(`GPS ativo (±${Math.round(accuracy)}m) - ${nearest.id}`);
 
-        // Atualiza marcador
+        // Marcador do usuário
         if (userMarker) {
             userMarker.setLatLng([userLat, userLng]);
             if (accuracyCircle) { accuracyCircle.setLatLng([userLat, userLng]); accuracyCircle.setRadius(accuracy); }
         } else {
             accuracyCircle = L.circle([userLat, userLng], {
-                color: '#0047AB', fillColor: '#0047AB', fillOpacity: 0.1, weight: 1, radius: accuracy
+                color: '#2563EB', fillColor: '#2563EB', fillOpacity: 0.1, weight: 1, radius: accuracy
             }).addTo(mapNav);
             userMarker = L.circleMarker([userLat, userLng], {
-                color: '#FFF', weight: 3, fillColor: '#0047AB', fillOpacity: 1, radius: 8
-            }).addTo(mapNav).bindPopup("Você está aqui (GPS)");
+                color: '#FFF', weight: 3, fillColor: '#2563EB', fillOpacity: 1, radius: 8
+            }).addTo(mapNav).bindPopup("Você está aqui");
+
+            // Centraliza só na primeira vez
             mapNav.setView([userLat, userLng], 18);
+            userMoved = true;
         }
 
-        // SUGERE SNAP: verifica se está perto de um prédio
-        checkForSnapSuggestion();
-
-        // Recalcula rota se houver destino
-        if (destId) recalcRoute();
-    }
-
-    function checkForSnapSuggestion() {
-        if (!userLat || !userLng) return;
-        
-        // Procura prédio mais próximo
-        let nearest = null, minDist = Infinity;
-        buildings.forEach(b => {
-            const d = haversine(userLat, userLng, b.lat, b.lng);
-            if (d < minDist && d < SNAP_DISTANCE) { minDist = d; nearest = b; }
-        });
-
-        // Se achou um prédio próximo E o usuário não recusou ele ainda
-        if (nearest && snapDismissedFor !== nearest.id && startMode === 'gps') {
-            snapCandidate = nearest;
-            document.getElementById('snap-title').innerText = `Você está no ${nearest.name}?`;
-            document.getElementById('snap-desc').innerText = `Detectamos que você está a ${Math.round(minDist)}m do ${nearest.name}. Deseja travar sua localização nele?`;
-            document.getElementById('snap-popup').classList.add('active');
+        // Atualiza rota se houver destino
+        if (destId) {
+            recalcRoute();
+            updateCompass();
         }
     }
 
-    function confirmSnap() {
-        if (!snapCandidate) return;
-        setManualLocation(snapCandidate, true);
-        document.getElementById('snap-popup').classList.remove('active');
-    }
-
-    function dismissSnap() {
-        if (snapCandidate) snapDismissedFor = snapCandidate.id;
-        document.getElementById('snap-popup').classList.remove('active');
-        snapCandidate = null;
-    }
-
-    function updateGpsStatus(accuracy, isValid) {
-        const status = document.getElementById('gps-status');
-        const text = document.getElementById('gps-text');
-        status.style.display = 'flex';
-        status.className = 'gps-status';
-        if (!isValid) { status.classList.add('gps-bad'); text.innerText = `Sinal fraco (${Math.round(accuracy)}m)`; }
-        else if (accuracy <= 15) { status.classList.add('gps-good'); text.innerText = `Preciso ±${Math.round(accuracy)}m`; }
-        else if (accuracy <= 25) { status.classList.add('gps-medium'); text.innerText = `Bom ±${Math.round(accuracy)}m`; }
-        else { status.classList.add('gps-bad'); text.innerText = `Razoável ±${Math.round(accuracy)}m`; }
-    }
-
-    // ============================================================
-    // SELEÇÃO MANUAL
-    // ============================================================
-    function openManualLocation() {
-        switchScreen('screen-select');
-        document.getElementById('select-title').innerText = "Onde você está agora?";
-        const list = document.getElementById('destination-list');
-        list.innerHTML = '';
-        buildings.forEach(loc => {
-            const div = document.createElement('div');
-            div.className = 'list-item';
-            div.innerHTML = `<i class="fas fa-map-marker-alt" style="color: #FFC107;"></i>
-                <div><h4>${loc.name}</h4><p>${loc.desc}</p></div>
-                <i class="fas fa-chevron-right" style="color:#ccc; font-size:14px;"></i>`;
-            div.onclick = () => setManualLocation(loc, false);
-            list.appendChild(div);
-        });
-    }
-
-    function setManualLocation(loc, fromSnap) {
-        startNodeId = loc.id;
-        startMode = 'manual';
-        userLat = loc.lat;
-        userLng = loc.lng;
-
-        if (userMarker) {
-            userMarker.setLatLng([userLat, userLng]);
-            userMarker.setStyle({ fillColor: '#FFC107', color: '#333' });
-            if (accuracyCircle) { mapNav.removeLayer(accuracyCircle); accuracyCircle = null; }
+    function recenterMap() {
+        if (userLat && userLng) {
+            mapNav.setView([userLat, userLng], 18);
         } else {
-            userMarker = L.circleMarker([userLat, userLng], {
-                color: '#333', weight: 3, fillColor: '#FFC107', fillOpacity: 1, radius: 8
-            }).addTo(mapNav).bindPopup("Você está aqui (manual)");
-        }
-
-        if (!fromSnap) {
-            alert(`Local definido: ${loc.name}\n\nAgora escolha o destino.`);
-            switchScreen('screen-home');
-        } else {
-            // Veio do snap - já está na tela do mapa, então recalcula
-            if (destId) recalcRoute();
+            toast("GPS ainda não disponível");
         }
     }
 
@@ -420,16 +538,26 @@
     function filterCategory(cat) {
         switchScreen('screen-select');
         document.getElementById('select-title').innerText = "Selecionar destino";
+        document.getElementById('select-preview').classList.remove('active');
+
         const list = document.getElementById('destination-list');
         list.innerHTML = '';
-        const filtered = buildings.filter(loc => loc.cat === cat);
-        if (filtered.length === 0) { list.innerHTML = '<p style="text-align:center; padding:20px; color:#888;">Nada encontrado.</p>'; return; }
+
+        let filtered = [];
+        if (cat === 'Blocos') filtered = buildings.filter(l => l.cat === 'Blocos');
+        else if (cat === 'Salas') filtered = buildings.filter(l => l.cat === 'Blocos').slice(0, 4);
+        else filtered = buildings.filter(l => l.cat === cat);
+        if (filtered.length === 0) filtered = buildings.slice(0, 5);
+
         filtered.forEach(loc => {
             const div = document.createElement('div');
-            div.className = 'list-item';
-            div.innerHTML = `<i class="fas fa-map-marker-alt"></i>
-                <div><h4>${loc.name}</h4><p>${loc.desc}</p></div>
-                <i class="fas fa-chevron-right" style="color:#ccc; font-size:14px;"></i>`;
+            div.className = 'dest-item';
+            const iconClass = loc.cat === 'Restaurante' ? 'yellow' : '';
+            div.innerHTML = `
+                <div class="icon-box ${iconClass}"><i class="fas ${loc.icon}"></i></div>
+                <div class="info"><h4>${loc.name}</h4><p>${loc.desc}</p></div>
+                <i class="fas fa-chevron-right"></i>
+            `;
             div.onclick = () => selectDestination(loc);
             list.appendChild(div);
         });
@@ -437,21 +565,59 @@
 
     function selectDestination(loc) {
         destLat = loc.lat; destLng = loc.lng; destId = loc.id;
-        document.getElementById('compass-dest-name').innerText = loc.name;
-        switchScreen('screen-nav');
-        
-        if (destMarker) mapNav.removeLayer(destMarker);
-        destMarker = L.marker([destLat, destLng]).addTo(mapNav).bindPopup(loc.name).openPopup();
-        
+        destName = loc.name; destDesc = loc.desc; destIcon = loc.icon;
+
+        document.getElementById('preview-name').innerText = loc.name;
+        document.getElementById('preview-desc').innerText = loc.desc;
+        document.getElementById('preview-icon-i').className = 'fas ' + loc.icon;
+
+        // Calcula distância
+        if (startNodeId && userLat) {
+            const path = dijkstra(startNodeId, destId);
+            if (path) {
+                let total = 0;
+                const coords = path.map(id => [pathGraph.nodes[id].lat, pathGraph.nodes[id].lng]);
+                if (startMode === 'gps' && userLat) coords.unshift([userLat, userLng]);
+                for (let i = 0; i < coords.length - 1; i++) {
+                    total += haversine(coords[i][0], coords[i][1], coords[i+1][0], coords[i+1][1]);
+                }
+                document.getElementById('preview-time').innerText = `${Math.ceil(total / 80)} min`;
+                document.getElementById('preview-dist').innerText = `${Math.round(total)} m`;
+            }
+        } else {
+            document.getElementById('preview-time').innerText = '-- min';
+            document.getElementById('preview-dist').innerText = '-- m';
+        }
+
+        document.getElementById('select-preview').classList.add('active');
+        window._pendingDest = loc;
+    }
+
+    function tracarRota() {
+        if (!window._pendingDest) return;
+        const loc = window._pendingDest;
+
         if (!startNodeId) {
-            alert("Primeiro escolha onde você está:\n- Use o GPS (e confirme o snap), ou\n- Clique em 'Estou em...'");
+            toast("Primeiro ative o GPS na tela inicial");
+            switchScreen('screen-home');
             return;
         }
+
+        switchScreen('screen-nav');
+
+        if (destMarker) mapNav.removeLayer(destMarker);
+        destMarker = L.marker([destLat, destLng]).addTo(mapNav).bindPopup(loc.name).openPopup();
+
+        document.getElementById('compass-dest-name').innerText = destName;
+        document.getElementById('compass-dest-desc').innerText = destDesc;
+        document.getElementById('compass-icon').className = 'fas ' + destIcon;
+
         recalcRoute();
+        updateCompass();
     }
 
     // ============================================================
-    // DIJKSTRA - ROTA PELAS CALÇADAS
+    // DIJKSTRA
     // ============================================================
     function findNearestNode(lat, lng) {
         let nearestId = null, minDist = Infinity;
@@ -471,7 +637,7 @@
         for (const id in pathGraph.nodes) { dist[id] = Infinity; prev[id] = null; }
         dist[startId] = 0;
         const queue = new Set(Object.keys(pathGraph.nodes));
-        
+
         while (queue.size > 0) {
             let u = null, minD = Infinity;
             for (const id of queue) if (dist[id] < minD) { minD = dist[id]; u = id; }
@@ -500,42 +666,51 @@
     function recalcRoute() {
         if (!startNodeId || !destId) return;
         const path = dijkstra(startNodeId, destId);
-        if (!path) {
-            alert("Não foi possível encontrar um caminho pelas calçadas.");
-            return;
-        }
+        if (!path) { toast("Sem rota disponível"); return; }
 
-        const coords = path.map(id => [pathGraph.nodes[id].lat, pathGraph.nodes[id].lng]);
-
-        // Se é GPS, conecta o ponto real do GPS ao primeiro nó do grafo
-        if (startMode === 'gps' && userLat && userLng) {
-            coords.unshift([userLat, userLng]);
-        }
+        const coords = [[userLat || pathGraph.nodes[startNodeId].lat, userLng || pathGraph.nodes[startNodeId].lng]];
+        path.forEach(id => coords.push([pathGraph.nodes[id].lat, pathGraph.nodes[id].lng]));
 
         if (routeLayer) mapNav.removeLayer(routeLayer);
         routeLayer = L.polyline(coords, {
-            color: '#0047AB', weight: 6, opacity: 0.9, lineJoin: 'round', lineCap: 'round'
+            color: '#2563EB', weight: 6, opacity: 0.9, lineJoin: 'round', lineCap: 'round'
         }).addTo(mapNav);
 
-        mapNav.fitBounds(routeLayer.getBounds(), { padding: [60, 60] });
+        // Ajusta zoom à rota
+        mapNav.fitBounds(routeLayer.getBounds(), { padding: [80, 80] });
 
         let totalDist = 0;
         for (let i = 0; i < coords.length - 1; i++) {
             totalDist += haversine(coords[i][0], coords[i][1], coords[i+1][0], coords[i+1][1]);
         }
         const tempoMin = Math.ceil(totalDist / 80);
-        const startName = pathGraph.nodes[startNodeId].name;
 
-        document.getElementById('nav-distance').innerText = `Trajeto: ${Math.round(totalDist)} m`;
+        document.getElementById('nav-instruction').innerText = `Ir para ${destName}`;
+        document.getElementById('nav-distance').innerText = `${Math.round(totalDist)} m`;
         document.getElementById('nav-time').innerText = `${tempoMin} min`;
-        document.getElementById('nav-action').innerText = `De: ${startName}`;
+        document.getElementById('nav-total').innerText = `${Math.round(totalDist)} m`;
+        document.getElementById('nav-step').innerText = `1 / ${path.length}`;
+        document.getElementById('nav-remaining').innerText = `Continue até ${destName}`;
+        document.getElementById('nav-action').innerText = 'Siga a rota';
         document.getElementById('nav-action-dist').innerText = `${Math.round(totalDist)} m`;
-        document.getElementById('compass-distance').innerText = `${Math.round(totalDist)} m`;
+        document.getElementById('nav-progress').style.width = '20%';
     }
 
     // ============================================================
     // BÚSSOLA
     // ============================================================
+    function updateCompass() {
+        if (!userLat || !userLng || !destLat) {
+            document.getElementById('compass-distance').innerText = '-- m';
+            document.getElementById('compass-distance').innerText = '-- m';
+            return;
+        }
+        const dist = haversine(userLat, userLng, destLat, destLng);
+        document.getElementById('compass-distance').innerText = `${Math.round(dist)} m`;
+        document.getElementById('compass-action-dist').innerText = `${Math.round(dist)} m`;
+        updateArrow();
+    }
+
     function checkCompassPermission() {
         if (typeof DeviceOrientationEvent !== 'undefined' && 
             typeof DeviceOrientationEvent.requestPermission === 'function') {
@@ -554,32 +729,62 @@
                     window.addEventListener('deviceorientation', handleOrientation, true);
                     isCompassActive = true;
                     document.getElementById('btn-permission').style.display = 'none';
-                } else { alert("Permissão negada para a bússola."); }
+                } else { toast("Permissão negada"); }
             })
-            .catch(err => alert("Erro: " + err.message));
+            .catch(err => toast("Erro: " + err.message));
     }
 
     function handleOrientation(event) {
-        if (!document.getElementById('screen-compass').classList.contains('active')) return;
-        
-        let heading = event.webkitCompassHeading !== undefined ? event.webkitCompassHeading : 
-                      (event.alpha !== null ? 360 - event.alpha : null);
-        
-        if (heading === null || heading === undefined) return;
+        let heading = null;
+        if (event.webkitCompassHeading !== undefined && event.webkitCompassHeading !== null) {
+            heading = event.webkitCompassHeading;
+        } else if (event.alpha !== null && event.alpha !== undefined) {
+            heading = 360 - event.alpha;
+        }
+        if (heading === null) return;
+        lastHeading = heading;
+        updateArrow();
+    }
+
+    function updateArrow() {
         if (!userLat || !destLat) return;
 
+        // Cálculo de ângulo do usuário até o destino
         const dy = destLat - userLat;
         const dx = Math.cos(Math.PI / 180 * userLat) * (destLng - userLng);
-        let angleToDest = Math.atan2(dy, dx) * 180 / Math.PI;
+        let angleToDest = Math.atan2(dx, dy) * 180 / Math.PI;
         angleToDest = (angleToDest + 360) % 360;
 
+        const rotation = angleToDest - lastHeading;
+
         const arrow = document.getElementById('compass-arrow');
-        const rotation = angleToDest - heading;
-        arrow.style.transform = `rotate(${rotation}deg)`;
+        if (arrow) arrow.style.transform = `rotate(${rotation}deg)`;
+
+        // Label da direção
+        const absRot = Math.abs(((rotation + 180) % 360) - 180);
+        const label = document.getElementById('compass-label');
+        if (absRot < 20) label.innerText = 'à sua frente';
+        else if (absRot < 60) label.innerText = 'levemente à frente';
+        else if (absRot < 120) label.innerText = rotation > 0 ? 'à sua direita' : 'à sua esquerda';
+        else label.innerText = 'atrás de você';
     }
 
     // ============================================================
-    // BUSCA E HAVERSINE
+    // LISTA DO MAPA COMPLETO
+    // ============================================================
+    function setupFullmapList() {
+        const container = document.getElementById('fullmap-list-content');
+        container.innerHTML = '';
+        buildings.forEach((loc, i) => {
+            const div = document.createElement('div');
+            div.className = 'loc-entry';
+            div.innerHTML = `<span class="num">${String(i+1).padStart(2, '0')}</span> <span>${loc.name}</span>`;
+            container.appendChild(div);
+        });
+    }
+
+    // ============================================================
+    // BUSCA
     // ============================================================
     function setupSearch() {
         document.getElementById('search-input').addEventListener('input', (e) => {
@@ -587,21 +792,40 @@
             if (q.length > 2) {
                 switchScreen('screen-select');
                 document.getElementById('select-title').innerText = "Resultados";
+                document.getElementById('select-preview').classList.remove('active');
                 const list = document.getElementById('destination-list');
                 list.innerHTML = '';
                 const filtered = buildings.filter(l => l.name.toLowerCase().includes(q) || l.desc.toLowerCase().includes(q));
-                if (filtered.length === 0) { list.innerHTML = '<p style="text-align:center; padding:20px; color:#888;">Nada encontrado.</p>'; return; }
                 filtered.forEach(loc => {
                     const div = document.createElement('div');
-                    div.className = 'list-item';
-                    div.innerHTML = `<i class="fas fa-search"></i><div><h4>${loc.name}</h4><p>${loc.desc}</p></div>`;
+                    div.className = 'dest-item';
+                    div.innerHTML = `<div class="icon-box"><i class="fas ${loc.icon}"></i></div>
+                        <div class="info"><h4>${loc.name}</h4><p>${loc.desc}</p></div>
+                        <i class="fas fa-chevron-right"></i>`;
                     div.onclick = () => selectDestination(loc);
                     list.appendChild(div);
                 });
             }
         });
+
+        document.getElementById('select-search-input').addEventListener('input', (e) => {
+            const q = e.target.value.toLowerCase();
+            const list = document.getElementById('destination-list');
+            list.innerHTML = '';
+            const filtered = buildings.filter(l => l.name.toLowerCase().includes(q));
+            filtered.forEach(loc => {
+                const div = document.createElement('div');
+                div.className = 'dest-item';
+                div.innerHTML = `<div class="icon-box"><i class="fas ${loc.icon}"></i></div>
+                    <div class="info"><h4>${loc.name}</h4><p>${loc.desc}</p></div>
+                    <i class="fas fa-chevron-right"></i>`;
+                div.onclick = () => selectDestination(loc);
+                list.appendChild(div);
+            });
+        });
     }
 
+    // Haversine
     function haversine(lat1, lon1, lat2, lon2) {
         const R = 6371e3;
         const φ1 = lat1 * Math.PI/180, φ2 = lat2 * Math.PI/180;
@@ -610,7 +834,18 @@
         return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
     }
 
-    window.onload = () => { initMaps(); setupSearch(); };
+    // Atualiza a seta em loop
+    setInterval(() => {
+        if (document.getElementById('screen-compass').classList.contains('active')) {
+            updateArrow();
+        }
+    }, 80);
+
+    window.onload = () => {
+        initMaps();
+        setupSearch();
+        setupFullmapList();
+    };
 </script>
 </body>
 </html>
