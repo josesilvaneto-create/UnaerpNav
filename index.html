@@ -19,10 +19,11 @@
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Montserrat', sans-serif; -webkit-tap-highlight-color: transparent; }
         body, html { height: 100%; width: 100%; overflow: hidden; background: #000; }
         #app { width: 100%; height: 100%; display: flex; flex-direction: column; position: relative; background: #F0F2F5; max-width: 500px; margin: 0 auto; }
+
         .screen { display: none; flex: 1; flex-direction: column; overflow: hidden; position: relative; }
         .screen.active { display: flex; }
 
-        /* TELA 1: HOME */
+        /* ========== TELA 1: HOME ========== */
         #screen-home { background: var(--unaerp-dark); overflow-y: auto; padding-bottom: 80px; }
         .home-topbar { padding: 20px 20px 0 20px; display: flex; justify-content: flex-end; }
         .home-topbar i { color: white; font-size: 22px; cursor: pointer; }
@@ -34,21 +35,23 @@
         .home-search i { color: #888; font-size: 16px; }
         .home-search input { border: none; outline: none; flex: 1; font-size: 12px; color: #333; background: transparent; }
         .home-search input::placeholder { color: #999; font-size: 11px; }
+
         .grid-categories { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; padding: 0 20px; }
         .cat-btn { background: white; border: none; border-radius: 8px; padding: 20px 5px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; cursor: pointer; aspect-ratio: 1/1; }
         .cat-btn:active { background: #f0f0f0; }
         .cat-btn i { font-size: 22px; color: #222; }
         .cat-btn span { font-size: 10px; font-weight: 500; color: #222; text-align: center; }
+
         .btn-location-main { background: var(--unaerp-accent); color: white; border: none; width: calc(100% - 40px); margin: 20px 20px 0 20px; padding: 16px; border-radius: 8px; font-weight: 700; font-size: 13px; display: flex; align-items: center; justify-content: center; gap: 10px; cursor: pointer; }
         .location-hint { text-align: center; font-size: 10px; color: rgba(255,255,255,0.5); margin-top: 12px; line-height: 1.5; padding: 0 40px 20px; }
 
-        /* BOTTOM NAV */
+        /* ========== BOTTOM NAV ========== */
         .bottom-nav { position: absolute; bottom: 0; left: 0; right: 0; height: 65px; background: white; display: flex; justify-content: space-around; align-items: center; border-top: 1px solid #e0e0e0; z-index: 2000; padding-bottom: env(safe-area-inset-bottom); }
         .nav-item { display: flex; flex-direction: column; align-items: center; gap: 4px; color: #999; font-size: 9px; font-weight: 500; cursor: pointer; padding: 6px 12px; flex: 1; }
         .nav-item i { font-size: 20px; }
         .nav-item.active { color: var(--unaerp-blue); }
 
-        /* TELA 2: SELECIONAR */
+        /* ========== TELA 2: SELECIONAR ========== */
         #screen-select { background: white; }
         .screen-header { background: var(--unaerp-dark); color: white; padding: 22px 20px 18px 20px; display: flex; align-items: center; gap: 15px; flex-shrink: 0; }
         .screen-header i.fa-chevron-left { font-size: 18px; cursor: pointer; }
@@ -76,7 +79,7 @@
         .preview-meta i { color: #888; }
         .btn-tracar { background: var(--unaerp-accent); color: white; border: none; width: 100%; padding: 15px; border-radius: 8px; font-weight: 700; font-size: 13px; cursor: pointer; }
 
-        /* TELA 3: NAVEGAÇÃO */
+        /* ========== TELA 3: NAVEGAÇÃO ========== */
         #screen-nav { background: #E5E5E5; }
         .map-view { flex: 1; width: 100%; height: 100%; z-index: 1; }
         .nav-header { position: absolute; top: 15px; left: 15px; right: 15px; background: var(--unaerp-dark); color: white; border-radius: 12px; padding: 15px; z-index: 1000; display: flex; align-items: center; justify-content: space-between; box-shadow: 0 4px 15px rgba(0,0,0,0.25); }
@@ -95,12 +98,12 @@
         .nav-footer .turn-text h4 { font-size: 14px; font-weight: 700; color: #222; }
         .nav-footer .turn-text p { font-size: 11px; color: #888; margin-top: 2px; }
         .progress-bar { height: 4px; background: #e5e5e5; border-radius: 2px; margin-top: 12px; overflow: hidden; }
-        .progress-bar .fill { height: 100%; background: var(--unaerp-accent); width: 40%; border-radius: 2px; }
+        .progress-bar .fill { height: 100%; background: var(--unaerp-accent); width: 40%; border-radius: 2px; transition: 0.3s; }
         .step-counter { display: flex; justify-content: space-between; font-size: 10px; color: #999; margin-top: 6px; }
         .btn-back-nav { position: absolute; top: 15px; left: 15px; background: white; border: none; width: 40px; height: 40px; border-radius: 50%; box-shadow: 0 2px 8px rgba(0,0,0,0.2); z-index: 1100; cursor: pointer; display: none; align-items: center; justify-content: center; }
         .btn-recenter { position: absolute; bottom: 130px; right: 20px; z-index: 1000; background: white; width: 45px; height: 45px; border-radius: 50%; border: none; box-shadow: 0 3px 10px rgba(0,0,0,0.2); cursor: pointer; color: var(--unaerp-accent); font-size: 18px; }
 
-        /* TELA 4: BÚSSOLA */
+        /* ========== TELA 4: BÚSSOLA ========== */
         #screen-compass { background: #0a0a0a; color: white; }
         .compass-screen { flex: 1; display: flex; flex-direction: column; overflow-y: auto; }
         .compass-header { padding: 25px 22px 15px 22px; display: flex; align-items: flex-start; justify-content: space-between; }
@@ -126,7 +129,7 @@
         .compass-bottom-banner .text p { font-size: 11px; color: rgba(255,255,255,0.5); margin-top: 2px; }
         .btn-compass-permission { position: absolute; bottom: 110px; left: 50%; transform: translateX(-50%); background: var(--unaerp-accent); color: white; border: none; padding: 11px 22px; border-radius: 20px; font-weight: 700; font-size: 12px; cursor: pointer; display: none; white-space: nowrap; }
 
-        /* TELA 5: MAPA COMPLETO */
+        /* ========== TELA 5: MAPA COMPLETO ========== */
         #screen-fullmap { background: white; overflow: hidden; }
         .fullmap-header { background: var(--unaerp-dark); color: white; padding: 22px 20px 18px 20px; display: flex; align-items: center; gap: 15px; flex-shrink: 0; }
         .fullmap-header i { font-size: 18px; cursor: pointer; }
@@ -149,6 +152,8 @@
         .gps-pill.good .dot { background: #28a745; }
         .gps-pill.medium .dot { background: #ffc107; }
         .gps-pill.bad .dot { background: #dc3545; }
+        .gps-pill.snap { background: var(--unaerp-yellow); color: #222; }
+        .gps-pill.snap .dot { background: #222; }
     </style>
 </head>
 <body>
@@ -254,7 +259,7 @@
                     <div class="icon-circle"><i class="fas fa-book" id="compass-icon"></i></div>
                     <div>
                         <h3 id="compass-dest-name">Escolha um destino</h3>
-                        <p id="compass-dest-desc">-- </p>
+                        <p id="compass-dest-desc">--</p>
                     </div>
                 </div>
                 <button class="btn-close" onclick="switchScreen('screen-nav')"><i class="fas fa-times"></i></button>
@@ -343,7 +348,7 @@
     ];
 
     // ============================================================
-    // VARIÁVEIS
+    // VARIÁVEIS GLOBAIS
     // ============================================================
     let mapNav, mapFull;
     let userLat = null, userLng = null, userAccuracy = null;
@@ -353,14 +358,15 @@
     let isCompassActive = false;
     let watchId = null;
     let lastHeading = 0;
-    let snappedBuilding = null; // Se o GPS estiver dentro de um prédio, trava nesse ponto
+    let snappedBuilding = null;
 
     const defaultCenter = [-21.2019, -47.7791];
-    const ACCURACY_THRESHOLD = 50; // Filtro de leituras ruins
-    const SNAP_BUILDING_DISTANCE = 30; // Metros - se mais perto que isso de um prédio, snap nele
+    const ACCURACY_THRESHOLD = 60;       // Filtro de leituras piores que isso
+    const SNAP_BUILDING_DISTANCE = 35;   // Metros - distância máxima para travar num prédio
+    const GOOD_ACCURACY = 25;            // Precisão considerada boa (não faz snap)
 
     // ============================================================
-    // INICIALIZAÇÃO
+    // INICIALIZAÇÃO DOS MAPAS
     // ============================================================
     function initMaps() {
         mapNav = L.map('map-nav', { zoomControl: false, preferCanvas: true }).setView(defaultCenter, 17);
@@ -369,7 +375,7 @@
         }).addTo(mapNav);
 
         buildings.forEach(loc => {
-            L.marker([loc.lat, loc.lng]).addTo(mapNav).bindPopup(`<b>${loc.name}</b>`);
+            L.marker([loc.lat, loc.lng]).addTo(mapNav).bindPopup(`<b>${loc.name}</b><br>${loc.desc}`);
         });
 
         mapFull = L.map('map-full', { zoomControl: false }).setView(defaultCenter, 16);
@@ -378,7 +384,7 @@
         }).addTo(mapFull);
 
         buildings.forEach(loc => {
-            L.marker([loc.lat, loc.lng]).addTo(mapFull).bindPopup(`<b>${loc.name}</b>`);
+            L.marker([loc.lat, loc.lng]).addTo(mapFull).bindPopup(`<b>${loc.name}</b><br>${loc.desc}`);
         });
     }
 
@@ -398,16 +404,24 @@
         const t = document.getElementById('toast');
         t.textContent = msg;
         t.classList.add('show');
-        setTimeout(() => t.classList.remove('show'), 2000);
+        setTimeout(() => t.classList.remove('show'), 2200);
     }
 
     // ============================================================
-    // GPS EM TEMPO REAL (com filtro + snap em prédios)
+    // GPS EM TEMPO REAL (com Wi-Fi positioning e snap em prédios)
     // ============================================================
     function startTracking() {
         if (!navigator.geolocation) { toast("GPS não suportado"); return; }
-        toast("Obtendo sinal GPS...");
+        toast("Buscando sinal preciso...");
 
+        // enableHighAccuracy:true ativa o uso combinado de GPS + Wi-Fi + torres
+        const options = {
+            enableHighAccuracy: true,
+            timeout: 20000,
+            maximumAge: 0
+        };
+
+        // Leitura inicial (pega a melhor leitura em até 20s)
         navigator.geolocation.getCurrentPosition(
             (pos) => handlePosition(pos, true),
             (err) => {
@@ -417,21 +431,22 @@
                 if (err.code === 3) msg += "tempo esgotado";
                 toast(msg);
             },
-            { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 }
+            options
         );
 
+        // Monitoramento contínuo
         if (watchId) navigator.geolocation.clearWatch(watchId);
         watchId = navigator.geolocation.watchPosition(
             (pos) => handlePosition(pos, false),
             (err) => console.error(err),
-            { enableHighAccuracy: true, maximumAge: 1500, timeout: 15000 }
+            options
         );
     }
 
     function handlePosition(position, isInitial) {
         const accuracy = position.coords.accuracy;
 
-        // FILTRO: ignora leituras muito ruins
+        // Filtro: ignora leituras muito ruins (pulo de GPS)
         if (!isInitial && accuracy > ACCURACY_THRESHOLD) {
             updateGpsPill(accuracy, false);
             return;
@@ -440,17 +455,18 @@
         let lat = position.coords.latitude;
         let lng = position.coords.longitude;
 
-        // SNAP EM PRÉDIOS: se está perto de um bloco, trava no bloco
-        // Isso resolve o problema de GPS dentro de prédio
-        if (accuracy > 15) {
+        // ============================================================
+        // SNAP EM PRÉDIOS
+        // Se o GPS está com precisão ruim (típico dentro de prédios),
+        // trava a posição no bloco mais próximo para não ficar "voando".
+        // ============================================================
+        snappedBuilding = null;
+        if (accuracy > GOOD_ACCURACY) {
             const nearest = findNearestBuilding(lat, lng);
             if (nearest && nearest.distance < SNAP_BUILDING_DISTANCE) {
-                // Está dentro/ao lado de um prédio, "trava" na posição do prédio
                 lat = nearest.building.lat;
                 lng = nearest.building.lng;
                 snappedBuilding = nearest.building;
-            } else {
-                snappedBuilding = null;
             }
         }
 
@@ -460,21 +476,31 @@
 
         updateGpsPill(accuracy, true);
 
-        // Atualiza marcador do usuário
+        // Atualiza o marcador do usuário
         if (userMarker) {
             userMarker.setLatLng([userLat, userLng]);
-            if (accuracyCircle) { accuracyCircle.setLatLng([userLat, userLng]); accuracyCircle.setRadius(accuracy); }
+            if (accuracyCircle) {
+                accuracyCircle.setLatLng([userLat, userLng]);
+                accuracyCircle.setRadius(snappedBuilding ? 5 : accuracy);
+            }
+            // Cor do ponto: azul se GPS, amarelo se snap em prédio
+            userMarker.setStyle({
+                fillColor: snappedBuilding ? '#FFC107' : '#2563EB'
+            });
         } else {
             accuracyCircle = L.circle([userLat, userLng], {
-                color: '#2563EB', fillColor: '#2563EB', fillOpacity: 0.1, weight: 1, radius: accuracy
+                color: '#2563EB', fillColor: '#2563EB', fillOpacity: 0.1,
+                weight: 1, radius: accuracy
             }).addTo(mapNav);
             userMarker = L.circleMarker([userLat, userLng], {
-                color: '#FFF', weight: 3, fillColor: '#2563EB', fillOpacity: 1, radius: 8
+                color: '#FFF', weight: 3,
+                fillColor: snappedBuilding ? '#FFC107' : '#2563EB',
+                fillOpacity: 1, radius: 8
             }).addTo(mapNav).bindPopup("Você está aqui");
             mapNav.setView([userLat, userLng], 18);
         }
 
-        // Se houver rota ativa, recalcula
+        // Se houver rota ativa, recalcula com a nova posição
         if (destId && routingControl) {
             updateRouteWaypoints();
         }
@@ -482,21 +508,16 @@
         if (destId) updateCompass();
     }
 
-    function findNearestBuilding(lat, lng) {
-        let nearest = null, minDist = Infinity;
-        buildings.forEach(b => {
-            const d = haversine(lat, lng, b.lat, b.lng);
-            if (d < minDist) { minDist = d; nearest = b; }
-        });
-        return { building: nearest, distance: minDist };
-    }
-
     function updateGpsPill(accuracy, isValid) {
         const pill = document.getElementById('gps-pill');
         const text = document.getElementById('gps-text');
         pill.style.display = 'flex';
         pill.className = 'gps-pill';
-        if (!isValid) {
+
+        if (snappedBuilding) {
+            pill.classList.add('snap');
+            text.innerText = `📍 Travado em ${snappedBuilding.name}`;
+        } else if (!isValid) {
             pill.classList.add('bad');
             text.innerText = `Sinal fraco (${Math.round(accuracy)}m)`;
         } else if (accuracy <= 15) {
@@ -509,6 +530,15 @@
             pill.classList.add('bad');
             text.innerText = `GPS fraco ±${Math.round(accuracy)}m`;
         }
+    }
+
+    function findNearestBuilding(lat, lng) {
+        let nearest = null, minDist = Infinity;
+        buildings.forEach(b => {
+            const d = haversine(lat, lng, b.lat, b.lng);
+            if (d < minDist) { minDist = d; nearest = b; }
+        });
+        return { building: nearest, distance: minDist };
     }
 
     function recenterMap() {
@@ -558,8 +588,7 @@
         document.getElementById('preview-desc').innerText = loc.desc;
         document.getElementById('preview-icon-i').className = 'fas ' + loc.icon;
 
-        // Estima distância/tempo em linha reta (será refinado pela API real)
-        if (userLat) {
+        if (userLat && userLng) {
             const dist = haversine(userLat, userLng, destLat, destLng);
             document.getElementById('preview-time').innerText = `${Math.ceil(dist / 80)} min`;
             document.getElementById('preview-dist').innerText = `${Math.round(dist)} m`;
@@ -595,12 +624,11 @@
     }
 
     // ============================================================
-    // ROTA REAL PELA API OSRM (FOSSGIS - footprint)
+    // ROTA REAL (OSRM FOSSGIS - perfil pedestre)
     // ============================================================
     function createRoute() {
         if (!userLat || !destLat) return;
 
-        // Remove rota anterior
         if (routingControl) {
             mapNav.removeControl(routingControl);
             routingControl = null;
@@ -611,7 +639,6 @@
                 L.latLng(userLat, userLng),
                 L.latLng(destLat, destLng)
             ],
-            // FOSSGIS: servidor gratuito alemão com perfil de PEDESTRE
             router: L.Routing.osrmv1({
                 serviceUrl: 'https://routing.openstreetmap.de/routed-foot/route/v1',
                 profile: 'foot'
@@ -638,7 +665,8 @@
             document.getElementById('nav-total').innerText = `${distance} m`;
             document.getElementById('nav-action').innerText = 'Siga a rota no mapa';
             document.getElementById('nav-action-dist').innerText = `${distance} m`;
-            document.getElementById('nav-step').innerText = `1 / ${route.instructions ? route.instructions.length : 1}`;
+            const steps = route.instructions ? route.instructions.length : 1;
+            document.getElementById('nav-step').innerText = `1 / ${steps}`;
             document.getElementById('nav-remaining').innerText = `Continue até ${destName}`;
             document.getElementById('nav-progress').style.width = '15%';
 
@@ -647,30 +675,41 @@
         });
 
         routingControl.on('routingerror', function(err) {
-            console.error("Erro OSRM:", err);
-            toast("Não foi possível calcular a rota. Tentando rota alternativa...");
+            console.warn("FOSSGIS falhou, tentando OSRM padrão:", err);
+            fallbackRoute();
+        });
+    }
 
-            // Fallback: usar OSRM padrão (perfil carro)
-            routingControl = L.Routing.control({
-                waypoints: [L.latLng(userLat, userLng), L.latLng(destLat, destLng)],
-                router: L.Routing.osrmv1({
-                    serviceUrl: 'https://router.project-osrm.org/route/v1',
-                    profile: 'driving'
-                }),
-                lineOptions: { styles: [{ color: '#2563EB', weight: 6, opacity: 0.9 }] },
-                show: false, addWaypoints: false, routeWhileDragging: false,
-                fitSelectedRoutes: true, createMarker: function() { return null; }
-            }).addTo(mapNav);
+    function fallbackRoute() {
+        if (routingControl) {
+            mapNav.removeControl(routingControl);
+            routingControl = null;
+        }
 
-            routingControl.on('routesfound', function(e) {
-                const route = e.routes[0];
-                const distance = Math.round(route.summary.totalDistance);
-                const tempo = Math.ceil(route.summary.totalTime / 60);
-                document.getElementById('nav-distance').innerText = `${distance} m`;
-                document.getElementById('nav-time').innerText = `${tempo} min`;
-                document.getElementById('nav-total').innerText = `${distance} m`;
-                document.getElementById('nav-action-dist').innerText = `${distance} m`;
-            });
+        routingControl = L.Routing.control({
+            waypoints: [L.latLng(userLat, userLng), L.latLng(destLat, destLng)],
+            router: L.Routing.osrmv1({
+                serviceUrl: 'https://router.project-osrm.org/route/v1',
+                profile: 'driving'
+            }),
+            lineOptions: { styles: [{ color: '#2563EB', weight: 6, opacity: 0.9 }] },
+            show: false, addWaypoints: false, routeWhileDragging: false,
+            fitSelectedRoutes: true, createMarker: function() { return null; }
+        }).addTo(mapNav);
+
+        routingControl.on('routesfound', function(e) {
+            const route = e.routes[0];
+            const distance = Math.round(route.summary.totalDistance);
+            const tempo = Math.ceil(route.summary.totalTime / 60);
+            document.getElementById('nav-instruction').innerText = `Ir para ${destName}`;
+            document.getElementById('nav-distance').innerText = `${distance} m`;
+            document.getElementById('nav-time').innerText = `${tempo} min`;
+            document.getElementById('nav-total').innerText = `${distance} m`;
+            document.getElementById('nav-action-dist').innerText = `${distance} m`;
+        });
+
+        routingControl.on('routingerror', function() {
+            toast("Não foi possível calcular a rota");
         });
     }
 
@@ -745,7 +784,7 @@
     }
 
     // ============================================================
-    // LISTA DO MAPA COMPLETO + BUSCA
+    // LISTA DO MAPA COMPLETO E BUSCA
     // ============================================================
     function setupFullmapList() {
         const container = document.getElementById('fullmap-list-content');
