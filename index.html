@@ -1,0 +1,2091 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>UNAERP Navigator — Navegação do Campus</title>
+    <meta name="description" content="Mapeamento completo de todas as salas, blocos e laboratórios do Campus UNAERP Ribeirão Preto. Navegação GPS em tempo real, bússola e mapa oficial ilustrado.">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <link rel="stylesheet" href="https://unpkg.com/leaflet-routing-machine@3.2.12/dist/leaflet-routing-machine.css" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <style>
+        /* ============================================================
+           DESIGN SYSTEM — VARIABLES
+           ============================================================ */
+        :root {
+            --bg-primary: #F4F6FB;
+            --bg-card: #FFFFFF;
+            --bg-dark: #071739;
+            --bg-darker: #040c1e;
+            --surface-glass: rgba(255,255,255,0.72);
+            --surface-glass-border: rgba(255,255,255,0.28);
+
+            --accent-primary: #1D58CD;
+            --accent-secondary: #3B82F6;
+            --accent-gradient: linear-gradient(135deg, #1D58CD 0%, #2563EB 100%);
+            --accent-glow: rgba(37,99,235,0.35);
+
+            --unaerp-yellow: #FFB800;
+            --unaerp-yellow-bg: #FFEAA7;
+            --green: #00E676;
+            --green-glow: rgba(0,230,118,0.5);
+            --red: #FF4757;
+            --orange: #FF9F43;
+            --teal: #00D2D3;
+            --pink: #FF6B81;
+            --purple: #8B5CF6;
+
+            --text-primary: #1A1E2E;
+            --text-secondary: #5A627D;
+            --text-muted: #9AA1BC;
+            --text-on-dark: #FFFFFF;
+            --text-on-dark-muted: rgba(255,255,255,0.65);
+
+            --radius-sm: 10px;
+            --radius-md: 14px;
+            --radius-lg: 20px;
+            --radius-xl: 28px;
+            --radius-full: 999px;
+
+            --shadow-sm: 0 2px 8px rgba(7,23,57,0.06);
+            --shadow-md: 0 4px 20px rgba(7,23,57,0.08);
+            --shadow-lg: 0 8px 32px rgba(7,23,57,0.12);
+            --shadow-glow: 0 4px 24px var(--accent-glow);
+
+            --transition-fast: 0.18s cubic-bezier(0.4,0,0.2,1);
+            --transition-med: 0.3s cubic-bezier(0.4,0,0.2,1);
+
+            --safe-bottom: env(safe-area-inset-bottom, 0px);
+        }
+
+        [data-theme="dark"] {
+            --bg-primary: #0B0F19;
+            --bg-card: #151C2C;
+            --bg-dark: #060A12;
+            --bg-darker: #020408;
+            --surface-glass: rgba(21,28,44,0.85);
+            --surface-glass-border: rgba(255,255,255,0.08);
+
+            --text-primary: #F0F4FC;
+            --text-secondary: #94A3B8;
+            --text-muted: #64748B;
+
+            --shadow-sm: 0 2px 8px rgba(0,0,0,0.4);
+            --shadow-md: 0 4px 20px rgba(0,0,0,0.45);
+        }
+
+        /* RESET & BASE */
+        *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+        body, html {
+            height: 100%; width: 100%; overflow: hidden;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: var(--bg-darker);
+            -webkit-tap-highlight-color: transparent;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        #app {
+            width: 100%; height: 100%;
+            display: flex; flex-direction: column;
+            position: relative;
+            background: var(--bg-primary);
+            max-width: 520px; margin: 0 auto;
+            overflow: hidden;
+        }
+
+        .screen {
+            display: none; flex: 1; flex-direction: column;
+            overflow: hidden; position: relative;
+        }
+        .screen.active { display: flex; animation: fadeIn 0.25s ease; }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(6px); }
+            to   { opacity: 1; transform: translateY(0); }
+        }
+        @keyframes pulse-ring {
+            0%, 100% { box-shadow: 0 0 0 0 var(--accent-glow); }
+            50% { box-shadow: 0 0 0 10px rgba(37,99,235,0); }
+        }
+
+        /* ============================================================
+           TELA 1: HOME
+           ============================================================ */
+        #screen-home {
+            background: var(--bg-dark);
+            overflow-y: auto;
+            padding-bottom: calc(75px + var(--safe-bottom));
+        }
+        .home-hero {
+            padding: 24px 22px 14px 22px;
+            position: relative;
+            display: flex; flex-direction: column; align-items: center; text-align: center;
+        }
+        .home-header-top {
+            width: 100%; display: flex; justify-content: space-between; align-items: center;
+            margin-bottom: 12px;
+        }
+        .campus-badge {
+            display: inline-flex; align-items: center; gap: 6px;
+            background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.12);
+            padding: 5px 12px; border-radius: var(--radius-full);
+            color: var(--unaerp-yellow); font-size: 11px; font-weight: 700;
+        }
+        .btn-theme-toggle {
+            background: rgba(255,255,255,0.08); border: none; color: white;
+            width: 34px; height: 34px; border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            cursor: pointer; font-size: 14px;
+        }
+
+        .home-logo-wrap {
+            margin: 6px 0 14px 0;
+        }
+        .home-logo-wrap h1 {
+            font-size: 26px; font-weight: 900; letter-spacing: 0.5px;
+            color: #FFFFFF; text-transform: uppercase; line-height: 1.1;
+        }
+        .home-logo-wrap h1 span { color: var(--unaerp-yellow); }
+        .home-logo-wrap p {
+            font-size: 12px; color: var(--text-on-dark-muted); margin-top: 6px;
+        }
+
+        .home-search-bar {
+            width: 100%; background: #FFFFFF;
+            border-radius: var(--radius-full);
+            display: flex; align-items: center;
+            padding: 12px 18px; gap: 10px;
+            box-shadow: 0 4px 18px rgba(0,0,0,0.22);
+            cursor: pointer;
+        }
+        .home-search-bar i { color: #8F9BB3; font-size: 15px; }
+        .home-search-bar input {
+            border: none; outline: none; flex: 1;
+            font-size: 13px; font-weight: 500; font-family: inherit;
+            color: #1A1E2E; background: transparent; cursor: pointer;
+        }
+
+        .home-body {
+            background: var(--bg-primary);
+            border-top-left-radius: var(--radius-xl);
+            border-top-right-radius: var(--radius-xl);
+            padding: 22px 18px 24px 18px;
+            margin-top: 10px;
+        }
+        .section-label {
+            font-size: 11px; font-weight: 800; color: var(--text-secondary);
+            text-transform: uppercase; letter-spacing: 1px;
+            margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center;
+        }
+        .section-label span.count {
+            background: rgba(29,88,205,0.1); color: var(--accent-primary);
+            padding: 2px 8px; border-radius: var(--radius-full); font-size: 10px;
+        }
+
+        /* Category Grid */
+        .grid-categories {
+            display: grid; grid-template-columns: repeat(3, 1fr);
+            gap: 10px; margin-bottom: 22px;
+        }
+        .cat-btn {
+            background: var(--bg-card);
+            border: 1px solid rgba(0,0,0,0.04);
+            border-radius: var(--radius-md);
+            padding: 14px 8px;
+            display: flex; flex-direction: column; align-items: center; gap: 8px;
+            cursor: pointer; transition: var(--transition-fast);
+            box-shadow: var(--shadow-sm);
+        }
+        [data-theme="dark"] .cat-btn { border-color: rgba(255,255,255,0.04); }
+        .cat-btn:active { transform: scale(0.96); background: rgba(29,88,205,0.06); }
+        .cat-btn .cat-icon {
+            width: 44px; height: 44px; border-radius: 12px;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 18px;
+        }
+        .cat-btn span {
+            font-size: 11px; font-weight: 700; color: var(--text-primary);
+            text-align: center; line-height: 1.2;
+        }
+
+        .cat-icon.blocos      { background: #EFF4FE; color: #2563EB; }
+        .cat-icon.biblio      { background: #F3E8FF; color: #8B5CF6; }
+        .cat-icon.salas       { background: #FFF7ED; color: #EA580C; }
+        .cat-icon.restaurante { background: #FEF3C7; color: #D97706; }
+        .cat-icon.hospital    { background: #FEE2E2; color: #DC2626; }
+        .cat-icon.quadras     { background: #DCFCE7; color: #16A34A; }
+        .cat-icon.academia    { background: #F1F5F9; color: #475569; }
+        .cat-icon.transporte  { background: #E0F2FE; color: #0284C7; }
+        .cat-icon.outros      { background: #FCE7F3; color: #DB2777; }
+
+        /* Quick banner to official map */
+        .official-map-banner {
+            background: linear-gradient(135deg, #FFB800 0%, #F59E0B 100%);
+            border-radius: var(--radius-lg);
+            padding: 14px 16px;
+            color: #071739;
+            display: flex; align-items: center; justify-content: space-between;
+            margin-bottom: 20px; cursor: pointer;
+            box-shadow: 0 4px 14px rgba(245,158,11,0.25);
+            transition: var(--transition-fast);
+        }
+        .official-map-banner:active { transform: scale(0.98); }
+        .official-map-banner .banner-text h4 { font-size: 13px; font-weight: 800; }
+        .official-map-banner .banner-text p { font-size: 10px; font-weight: 600; opacity: 0.85; margin-top: 2px; }
+        .official-map-banner .banner-btn {
+            background: #071739; color: #FFF;
+            padding: 7px 12px; border-radius: var(--radius-full);
+            font-size: 10px; font-weight: 800; display: flex; align-items: center; gap: 5px;
+        }
+
+        /* Popular Scroll */
+        .popular-scroll {
+            display: flex; gap: 10px; overflow-x: auto;
+            padding-bottom: 6px; margin-bottom: 20px;
+            -webkit-overflow-scrolling: touch;
+        }
+        .popular-scroll::-webkit-scrollbar { display: none; }
+        .popular-card {
+            min-width: 155px; max-width: 155px;
+            background: var(--bg-card);
+            border: 1px solid rgba(0,0,0,0.05);
+            border-radius: var(--radius-md);
+            padding: 12px; cursor: pointer;
+            box-shadow: var(--shadow-sm);
+            flex-shrink: 0; transition: var(--transition-fast);
+        }
+        [data-theme="dark"] .popular-card { border-color: rgba(255,255,255,0.05); }
+        .popular-card:active { transform: scale(0.97); }
+        .popular-card .badge-num {
+            display: inline-block; background: var(--bg-dark); color: var(--unaerp-yellow);
+            font-size: 9px; font-weight: 800; padding: 2px 6px; border-radius: 4px;
+            margin-bottom: 6px;
+        }
+        .popular-card h4 {
+            font-size: 12px; font-weight: 700; color: var(--text-primary);
+            white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+        }
+        .popular-card p {
+            font-size: 10px; color: var(--text-secondary); margin-top: 2px;
+            white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+        }
+
+        .btn-location-main {
+            background: var(--accent-gradient);
+            color: white; border: none; width: 100%;
+            padding: 15px; border-radius: var(--radius-md);
+            font-weight: 700; font-size: 14px;
+            display: flex; align-items: center; justify-content: center;
+            gap: 10px; cursor: pointer; box-shadow: var(--shadow-glow);
+            transition: var(--transition-fast); font-family: inherit;
+            margin-bottom: 10px;
+        }
+        .btn-location-main:active { transform: scale(0.97); }
+        .location-hint {
+            text-align: center; font-size: 11px;
+            color: var(--text-secondary); line-height: 1.5; padding: 0 14px;
+        }
+
+        /* ============================================================
+           BOTTOM NAV
+           ============================================================ */
+        .bottom-nav {
+            position: absolute; bottom: 0; left: 0; right: 0;
+            height: calc(60px + var(--safe-bottom));
+            background: var(--bg-card);
+            display: flex; justify-content: space-around; align-items: center;
+            padding-bottom: var(--safe-bottom);
+            border-top: 1px solid rgba(0,0,0,0.06);
+            z-index: 2000;
+        }
+        [data-theme="dark"] .bottom-nav { border-top-color: rgba(255,255,255,0.06); }
+        .nav-item {
+            display: flex; flex-direction: column; align-items: center;
+            gap: 4px; color: var(--text-muted);
+            font-size: 10px; font-weight: 600;
+            cursor: pointer; padding: 6px 16px;
+            flex: 1; transition: var(--transition-fast);
+            position: relative;
+        }
+        .nav-item i { font-size: 18px; }
+        .nav-item.active { color: var(--accent-primary); font-weight: 800; }
+        .nav-item.active::before {
+            content: ''; position: absolute; top: 0;
+            width: 22px; height: 3px;
+            background: var(--accent-primary); border-radius: 0 0 3px 3px;
+        }
+
+        /* ============================================================
+           TELA 2: SELECIONAR DESTINO & SALAS
+           ============================================================ */
+        #screen-select { background: var(--bg-primary); }
+        .screen-header {
+            background: var(--bg-dark); color: white;
+            padding: 16px 18px; display: flex; align-items: center; gap: 12px;
+            flex-shrink: 0; position: relative;
+        }
+        .screen-header::after {
+            content: ''; position: absolute; bottom: 0; left: 0; right: 0;
+            height: 3px; background: var(--accent-gradient);
+        }
+        .btn-back-round {
+            background: rgba(255,255,255,0.1); border: none; color: white;
+            width: 32px; height: 32px; border-radius: var(--radius-sm);
+            display: flex; align-items: center; justify-content: center;
+            cursor: pointer; font-size: 13px;
+        }
+        .screen-header h2 { font-size: 15px; font-weight: 700; }
+
+        .select-search-box {
+            margin: 12px 16px 8px 16px;
+            background: var(--bg-card);
+            border: 1px solid rgba(0,0,0,0.08);
+            border-radius: var(--radius-full);
+            display: flex; align-items: center;
+            padding: 11px 16px; gap: 10px;
+            box-shadow: var(--shadow-sm);
+        }
+        [data-theme="dark"] .select-search-box { border-color: rgba(255,255,255,0.08); }
+        .select-search-box i { color: var(--text-muted); font-size: 14px; }
+        .select-search-box input {
+            border: none; outline: none; flex: 1;
+            font-size: 13px; font-family: inherit;
+            color: var(--text-primary); background: transparent;
+        }
+
+        /* Filter Pills for Select Screen */
+        .filter-pills {
+            display: flex; gap: 8px; overflow-x: auto;
+            padding: 4px 16px 10px 16px;
+            -webkit-overflow-scrolling: touch;
+        }
+        .filter-pills::-webkit-scrollbar { display: none; }
+        .pill-btn {
+            background: var(--bg-card); border: 1px solid rgba(0,0,0,0.06);
+            padding: 6px 12px; border-radius: var(--radius-full);
+            font-size: 11px; font-weight: 600; color: var(--text-secondary);
+            white-space: nowrap; cursor: pointer; transition: var(--transition-fast);
+        }
+        [data-theme="dark"] .pill-btn { border-color: rgba(255,255,255,0.06); }
+        .pill-btn.active {
+            background: var(--accent-primary); color: #FFF; border-color: var(--accent-primary);
+        }
+
+        #destination-list {
+            flex: 1; overflow-y: auto;
+            padding: 4px 16px 180px 16px;
+        }
+
+        .dest-card {
+            background: var(--bg-card);
+            border-radius: var(--radius-md);
+            padding: 12px 14px; margin-bottom: 8px;
+            display: flex; align-items: center; gap: 12px;
+            cursor: pointer; box-shadow: var(--shadow-sm);
+            transition: var(--transition-fast);
+            border: 1px solid transparent;
+        }
+        .dest-card:active { transform: scale(0.98); }
+        .dest-card.is-selected {
+            border-color: var(--accent-primary);
+            background: rgba(37,99,235,0.04);
+        }
+        .dest-num-tag {
+            min-width: 32px; height: 32px; border-radius: 8px;
+            background: var(--bg-dark); color: var(--unaerp-yellow);
+            font-size: 11px; font-weight: 900;
+            display: flex; align-items: center; justify-content: center;
+        }
+        .dest-main-info { flex: 1; min-width: 0; }
+        .dest-main-info h4 {
+            font-size: 13px; font-weight: 700; color: var(--text-primary);
+            white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+        }
+        .dest-main-info p {
+            font-size: 11px; color: var(--text-secondary); margin-top: 2px;
+            white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+        }
+        .dest-badges {
+            display: flex; gap: 6px; margin-top: 4px; flex-wrap: wrap;
+        }
+        .dest-badge-room {
+            font-size: 9px; font-weight: 700; background: rgba(234,88,12,0.1);
+            color: #EA580C; padding: 2px 6px; border-radius: 4px;
+        }
+        .dest-badge-dist {
+            font-size: 9px; font-weight: 700; background: rgba(37,99,235,0.1);
+            color: var(--accent-primary); padding: 2px 6px; border-radius: 4px;
+        }
+        .dest-action-btns {
+            display: flex; align-items: center; gap: 6px;
+        }
+        .btn-view-rooms {
+            background: rgba(255,184,0,0.15); border: none; color: #B45309;
+            padding: 6px 10px; border-radius: 8px; font-size: 10px; font-weight: 800;
+            cursor: pointer;
+        }
+
+        /* Bottom Floating Destination Preview */
+        .select-preview-bar {
+            position: absolute; bottom: 0; left: 0; right: 0;
+            background: var(--bg-card);
+            border-top-left-radius: var(--radius-xl);
+            border-top-right-radius: var(--radius-xl);
+            box-shadow: 0 -4px 24px rgba(0,0,0,0.15);
+            padding: 16px 20px calc(16px + var(--safe-bottom)) 20px;
+            z-index: 2100;
+            display: none;
+            animation: slideUp 0.25s ease;
+        }
+        .select-preview-bar.active { display: block; }
+        @keyframes slideUp {
+            from { transform: translateY(100%); }
+            to   { transform: translateY(0); }
+        }
+        .preview-top-row {
+            display: flex; align-items: center; justify-content: space-between;
+            margin-bottom: 12px;
+        }
+        .preview-title-wrap h3 {
+            font-size: 14px; font-weight: 800; color: var(--text-primary);
+        }
+        .preview-title-wrap p {
+            font-size: 11px; color: var(--text-secondary); margin-top: 2px;
+        }
+        .preview-metrics {
+            display: flex; gap: 14px; margin-bottom: 14px;
+        }
+        .metric-pill {
+            background: var(--bg-primary); padding: 6px 12px; border-radius: var(--radius-full);
+            font-size: 11px; font-weight: 700; color: var(--text-primary);
+            display: flex; align-items: center; gap: 6px;
+        }
+        .preview-btn-row {
+            display: flex; gap: 10px;
+        }
+        .btn-action-rooms {
+            background: var(--bg-primary); border: 1px solid rgba(0,0,0,0.08);
+            color: var(--text-primary); font-weight: 700; font-size: 13px;
+            padding: 12px 14px; border-radius: var(--radius-md);
+            cursor: pointer; font-family: inherit; display: flex; align-items: center; gap: 6px;
+        }
+        .btn-action-tracar {
+            flex: 1; background: var(--accent-gradient);
+            color: white; border: none; font-weight: 800; font-size: 14px;
+            padding: 12px; border-radius: var(--radius-md);
+            cursor: pointer; font-family: inherit; box-shadow: var(--shadow-glow);
+            display: flex; align-items: center; justify-content: center; gap: 8px;
+        }
+
+        /* ============================================================
+           MODAL: SALAS DO BLOCO
+           ============================================================ */
+        .modal-overlay {
+            position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0,0,0,0.65); backdrop-filter: blur(4px);
+            z-index: 9999; display: none; align-items: flex-end;
+            justify-content: center;
+        }
+        .modal-overlay.open { display: flex; animation: fadeIn 0.2s ease; }
+        .modal-sheet {
+            background: var(--bg-card); width: 100%; max-width: 520px;
+            max-height: 82vh; border-top-left-radius: var(--radius-xl);
+            border-top-right-radius: var(--radius-xl);
+            padding: 18px 20px calc(24px + var(--safe-bottom)) 20px;
+            display: flex; flex-direction: column; overflow: hidden;
+            animation: slideUp 0.3s ease;
+        }
+        .modal-drag-handle {
+            width: 38px; height: 4px; background: rgba(0,0,0,0.15);
+            border-radius: 2px; margin: 0 auto 14px auto;
+        }
+        .modal-header {
+            display: flex; align-items: flex-start; justify-content: space-between;
+            margin-bottom: 12px; padding-bottom: 12px;
+            border-bottom: 1px solid rgba(0,0,0,0.06);
+        }
+        .modal-header h3 { font-size: 16px; font-weight: 800; color: var(--text-primary); }
+        .modal-header p { font-size: 11px; color: var(--text-secondary); margin-top: 3px; }
+        .btn-modal-close {
+            background: var(--bg-primary); border: none;
+            width: 32px; height: 32px; border-radius: 50%;
+            cursor: pointer; font-size: 14px; color: var(--text-muted);
+        }
+        .modal-rooms-scroll {
+            flex: 1; overflow-y: auto; padding-right: 4px;
+        }
+        .floor-group { margin-bottom: 14px; }
+        .floor-group-title {
+            font-size: 11px; font-weight: 800; color: var(--accent-primary);
+            text-transform: uppercase; letter-spacing: 0.8px; margin-bottom: 6px;
+            display: flex; align-items: center; gap: 6px;
+        }
+        .room-row {
+            background: var(--bg-primary); border-radius: var(--radius-sm);
+            padding: 9px 12px; margin-bottom: 5px;
+            display: flex; align-items: center; justify-content: space-between;
+        }
+        .room-row-left h5 { font-size: 12px; font-weight: 700; color: var(--text-primary); }
+        .room-row-left p { font-size: 10px; color: var(--text-secondary); margin-top: 2px; }
+        .btn-navigate-room {
+            background: var(--accent-primary); color: #FFF; border: none;
+            padding: 5px 10px; border-radius: 6px; font-size: 10px; font-weight: 800;
+            cursor: pointer; display: flex; align-items: center; gap: 4px;
+        }
+
+        /* ============================================================
+           TELA 3: NAVEGACAO GPS NO MAPA
+           ============================================================ */
+        #screen-nav { background: #000; }
+        .map-view { width: 100%; height: 100%; position: absolute; top: 0; left: 0; }
+
+        .nav-top-hud {
+            position: absolute; top: 12px; left: 14px; right: 14px;
+            background: rgba(7,23,57,0.92); backdrop-filter: blur(12px);
+            border-radius: var(--radius-lg); padding: 14px 16px;
+            display: flex; align-items: center; justify-content: space-between;
+            color: white; z-index: 1000; box-shadow: var(--shadow-lg);
+            border: 1px solid rgba(255,255,255,0.12);
+        }
+        .nav-top-left { display: flex; align-items: center; gap: 12px; }
+        .nav-turn-icon {
+            width: 42px; height: 42px; border-radius: 10px;
+            background: var(--accent-primary); display: flex;
+            align-items: center; justify-content: center; font-size: 20px;
+        }
+        .nav-top-text h4 { font-size: 15px; font-weight: 800; }
+        .nav-top-text p { font-size: 11px; opacity: 0.75; margin-top: 2px; }
+        .nav-top-right { text-align: right; }
+        .nav-top-right .time-big { font-size: 18px; font-weight: 900; color: var(--unaerp-yellow); }
+        .nav-top-right .dist-small { font-size: 11px; opacity: 0.75; }
+
+        .nav-float-actions {
+            position: absolute; right: 14px; bottom: 130px;
+            display: flex; flex-direction: column; gap: 10px; z-index: 1000;
+        }
+        .btn-float-action {
+            width: 44px; height: 44px; border-radius: 50%;
+            background: rgba(7,23,57,0.9); backdrop-filter: blur(8px);
+            color: white; border: 1px solid rgba(255,255,255,0.15);
+            display: flex; align-items: center; justify-content: center;
+            font-size: 16px; cursor: pointer; box-shadow: var(--shadow-md);
+        }
+        .btn-float-action.compass-active {
+            background: var(--green); color: #071739; border-color: var(--green);
+            box-shadow: 0 0 16px var(--green-glow);
+        }
+
+        .nav-bottom-card {
+            position: absolute; bottom: 14px; left: 14px; right: 14px;
+            background: rgba(255,255,255,0.96); backdrop-filter: blur(14px);
+            border-radius: var(--radius-lg); padding: 14px 16px;
+            z-index: 1000; box-shadow: var(--shadow-xl);
+        }
+        [data-theme="dark"] .nav-bottom-card { background: rgba(21,28,44,0.96); }
+        .nav-bottom-row {
+            display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px;
+        }
+        .nav-bottom-info h4 { font-size: 13px; font-weight: 800; color: var(--text-primary); }
+        .nav-bottom-info p { font-size: 11px; color: var(--text-secondary); margin-top: 2px; }
+        .btn-nav-stop {
+            background: rgba(255,71,87,0.12); color: var(--red); border: none;
+            padding: 6px 12px; border-radius: var(--radius-full);
+            font-size: 11px; font-weight: 800; cursor: pointer;
+        }
+        .nav-step-bar {
+            width: 100%; height: 4px; background: rgba(0,0,0,0.08);
+            border-radius: 2px; overflow: hidden; margin-top: 6px;
+        }
+        .nav-step-bar .fill {
+            height: 100%; width: 40%; background: var(--accent-primary);
+            border-radius: 2px; transition: width 0.3s ease;
+        }
+
+        /* ============================================================
+           TELA 4: MODO PROXIMIDADE (TIPO AIRTAG / BUSSOLA)
+           ============================================================ */
+        #screen-compass { background: #0A0F1D; color: white; }
+        .compass-header {
+            padding: 16px 20px; display: flex; align-items: center; justify-content: space-between;
+        }
+        .compass-header h3 { font-size: 15px; font-weight: 800; }
+        .compass-header p { font-size: 11px; color: rgba(255,255,255,0.55); margin-top: 2px; }
+        .btn-close-compass {
+            background: rgba(255,255,255,0.1); border: none; color: white;
+            width: 32px; height: 32px; border-radius: 50%; cursor: pointer;
+        }
+        .compass-distance-hero {
+            text-align: center; padding: 10px 20px;
+        }
+        .compass-big-number {
+            font-size: 54px; font-weight: 900; line-height: 1;
+            color: #FFFFFF; letter-spacing: -1px;
+        }
+        .compass-big-label {
+            font-size: 14px; font-weight: 700; color: var(--green); margin-top: 4px;
+        }
+        .compass-radar-wrap {
+            flex: 1; display: flex; align-items: center; justify-content: center; position: relative;
+        }
+        .radar-disc {
+            width: 250px; height: 250px; border-radius: 50%;
+            border: 1px solid rgba(255,255,255,0.1);
+            position: relative; display: flex; align-items: center; justify-content: center;
+            background: radial-gradient(circle, rgba(0,230,118,0.06) 0%, transparent 70%);
+        }
+        .radar-disc::before {
+            content: ''; position: absolute; width: 170px; height: 170px;
+            border-radius: 50%; border: 1px dashed rgba(255,255,255,0.08);
+        }
+        .radar-disc::after {
+            content: ''; position: absolute; width: 90px; height: 90px;
+            border-radius: 50%; border: 1px solid rgba(255,255,255,0.08);
+        }
+        .radar-arrow {
+            width: 76px; height: 76px;
+            transition: transform 0.12s ease-out;
+            filter: drop-shadow(0 0 16px var(--green-glow));
+        }
+        .radar-cardinal {
+            position: absolute; font-size: 11px; font-weight: 800; color: rgba(255,255,255,0.35);
+        }
+        .radar-cardinal.n { top: 10px; color: var(--green); }
+        .radar-cardinal.s { bottom: 10px; }
+        .radar-cardinal.o { left: 10px; }
+        .radar-cardinal.l { right: 10px; }
+
+        .compass-bottom-card {
+            background: #141C2E; padding: 16px 20px calc(20px + var(--safe-bottom)) 20px;
+            border-top-left-radius: var(--radius-xl); border-top-right-radius: var(--radius-xl);
+            display: flex; align-items: center; gap: 14px;
+        }
+        .compass-bottom-card .turn-box {
+            width: 40px; height: 40px; border-radius: 10px;
+            background: rgba(0,230,118,0.15); color: var(--green);
+            display: flex; align-items: center; justify-content: center; font-size: 18px;
+        }
+        .compass-bottom-card h4 { font-size: 13px; font-weight: 800; }
+        .compass-bottom-card p { font-size: 11px; color: rgba(255,255,255,0.5); margin-top: 2px; }
+
+        /* ============================================================
+           TELA 5: MAPA COMPLETO (ILUSTRADO + GPS)
+           ============================================================ */
+        #screen-fullmap { background: var(--bg-primary); overflow: hidden; }
+        .fullmap-header-top {
+            background: var(--bg-dark); color: white;
+            padding: 14px 18px; display: flex; align-items: center; justify-content: space-between;
+            flex-shrink: 0;
+        }
+        .fullmap-header-top .left-title { display: flex; align-items: center; gap: 10px; }
+        .fullmap-header-top h2 { font-size: 15px; font-weight: 800; }
+
+        /* Mode Switcher: Illustrated Map vs GPS Map */
+        .map-mode-toggle {
+            background: rgba(255,255,255,0.12); padding: 3px; border-radius: var(--radius-full);
+            display: flex; gap: 4px;
+        }
+        .mode-btn {
+            background: transparent; border: none; color: rgba(255,255,255,0.7);
+            padding: 4px 10px; border-radius: var(--radius-full);
+            font-size: 10px; font-weight: 700; cursor: pointer; transition: var(--transition-fast);
+        }
+        .mode-btn.active {
+            background: var(--unaerp-yellow); color: #071739;
+        }
+
+        .fullmap-view-container {
+            height: 44%; width: 100%; position: relative; background: #e5f0dc;
+            border-bottom: 2px solid rgba(0,0,0,0.08); overflow: hidden;
+        }
+        #map-full { width: 100%; height: 100%; display: none; }
+        #map-illustrated-container {
+            width: 100%; height: 100%; position: absolute; top: 0; left: 0;
+            overflow: auto; cursor: grab;
+            display: flex; align-items: center; justify-content: center;
+        }
+
+        /* Illustrated SVG Map Elements */
+        .svg-campus-map {
+            width: 100%; height: 100%; min-width: 500px; min-height: 280px;
+        }
+        .campus-pin {
+            cursor: pointer; transition: transform 0.15s ease;
+        }
+        .campus-pin:hover, .campus-pin.active {
+            transform: scale(1.25); transform-origin: center;
+        }
+        .campus-pin circle {
+            fill: #071739; stroke: #FFB800; stroke-width: 2;
+        }
+        .campus-pin text {
+            fill: #FFFFFF; font-size: 8px; font-weight: 900;
+            font-family: 'Inter', sans-serif; text-anchor: middle; dominant-baseline: central;
+        }
+
+        .fullmap-legend-sheet {
+            flex: 1; overflow-y: auto;
+            background: var(--bg-primary);
+            padding: 14px 16px calc(75px + var(--safe-bottom)) 16px;
+        }
+        .legend-title-row {
+            display: flex; align-items: center; justify-content: space-between;
+            margin-bottom: 10px;
+        }
+        .legend-title-row h3 {
+            font-size: 11px; font-weight: 800; color: var(--text-secondary);
+            text-transform: uppercase; letter-spacing: 0.8px;
+        }
+        .legend-items-grid {
+            display: flex; flex-direction: column; gap: 6px;
+        }
+        .legend-row-item {
+            background: var(--bg-card); border-radius: var(--radius-sm);
+            padding: 10px 12px; display: flex; align-items: center; gap: 10px;
+            cursor: pointer; box-shadow: var(--shadow-sm);
+            transition: var(--transition-fast);
+        }
+        .legend-row-item:active { transform: scale(0.98); background: rgba(37,99,235,0.05); }
+        .legend-badge {
+            min-width: 30px; height: 26px; border-radius: 6px;
+            background: var(--bg-dark); color: var(--unaerp-yellow);
+            font-size: 10px; font-weight: 900;
+            display: flex; align-items: center; justify-content: center;
+        }
+        .legend-info { flex: 1; min-width: 0; }
+        .legend-info h5 {
+            font-size: 12px; font-weight: 700; color: var(--text-primary);
+            white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+        }
+        .legend-info p {
+            font-size: 10px; color: var(--text-secondary); margin-top: 2px;
+            white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+        }
+
+        /* TOAST & OVERLAYS */
+        .toast {
+            position: fixed; top: 18px; left: 50%; transform: translateX(-50%) translateY(-30px);
+            background: rgba(7,23,57,0.95); backdrop-filter: blur(8px);
+            color: #FFF; padding: 9px 18px; border-radius: var(--radius-full);
+            font-size: 12px; font-weight: 700; opacity: 0; pointer-events: none;
+            transition: var(--transition-med); z-index: 10000; box-shadow: var(--shadow-lg);
+            border: 1px solid rgba(255,255,255,0.15);
+        }
+        .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+    </style>
+</head>
+<body>
+
+<div id="app">
+
+    <!-- ============================================================
+         TELA 1: HOME
+         ============================================================ -->
+    <div id="screen-home" class="screen active">
+        <div class="home-hero">
+            <div class="home-header-top">
+                <div class="campus-badge">
+                    <i class="fas fa-map-marker-alt"></i> Campus Ribeirão Preto
+                </div>
+                <button class="btn-theme-toggle" id="theme-toggle" onclick="toggleTheme()" aria-label="Alternar tema">
+                    <i class="fas fa-moon"></i>
+                </button>
+            </div>
+
+            <div class="home-logo-wrap">
+                <h1>UNAERP <span>NAVIGATOR</span></h1>
+                <p>Encontre qualquer sala, bloco ou laboratório no campus</p>
+            </div>
+
+            <div class="home-search-bar" onclick="openSearchWithQuery('')">
+                <i class="fas fa-search"></i>
+                <input type="text" placeholder="Buscar sala, bloco ou serviço (ex: H-102, DARA...)" readonly>
+            </div>
+        </div>
+
+        <div class="home-body">
+            <!-- Official Map Banner -->
+            <div class="official-map-banner" onclick="switchScreen('screen-fullmap')">
+                <div class="banner-text">
+                    <h4>Mapa Ilustrado Oficial</h4>
+                    <p>Todos os 32 blocos e pontos com a numeração oficial</p>
+                </div>
+                <div class="banner-btn">
+                    Ver Mapa <i class="fas fa-chevron-right"></i>
+                </div>
+            </div>
+
+            <div class="section-label">
+                <span>Categorias de Locais</span>
+                <span class="count">32 Pontos Oficiais</span>
+            </div>
+
+            <div class="grid-categories">
+                <button class="cat-btn" onclick="filterCategory('Blocos')">
+                    <div class="cat-icon blocos"><i class="fas fa-building"></i></div>
+                    <span>Blocos</span>
+                </button>
+                <button class="cat-btn" onclick="filterCategory('Salas')">
+                    <div class="cat-icon salas"><i class="fas fa-graduation-cap"></i></div>
+                    <span>Salas de Aula</span>
+                </button>
+                <button class="cat-btn" onclick="filterCategory('Biblioteca')">
+                    <div class="cat-icon biblio"><i class="fas fa-book"></i></div>
+                    <span>Biblioteca</span>
+                </button>
+                <button class="cat-btn" onclick="filterCategory('Hospital')">
+                    <div class="cat-icon hospital"><i class="fas fa-hospital"></i></div>
+                    <span>Hospital</span>
+                </button>
+                <button class="cat-btn" onclick="filterCategory('Restaurante')">
+                    <div class="cat-icon restaurante"><i class="fas fa-utensils"></i></div>
+                    <span>Alimentação</span>
+                </button>
+                <button class="cat-btn" onclick="filterCategory('Quadras')">
+                    <div class="cat-icon quadras"><i class="fas fa-futbol"></i></div>
+                    <span>Esportes</span>
+                </button>
+                <button class="cat-btn" onclick="filterCategory('Academia')">
+                    <div class="cat-icon academia"><i class="fas fa-dumbbell"></i></div>
+                    <span>Academia</span>
+                </button>
+                <button class="cat-btn" onclick="filterCategory('Transporte')">
+                    <div class="cat-icon transporte"><i class="fas fa-parking"></i></div>
+                    <span>Estacionamento</span>
+                </button>
+                <button class="cat-btn" onclick="filterCategory('Outros')">
+                    <div class="cat-icon outros"><i class="fas fa-ellipsis-h"></i></div>
+                    <span>Outros</span>
+                </button>
+            </div>
+
+            <div class="section-label">Locais Mais Buscados</div>
+            <div class="popular-scroll" id="popular-scroll"></div>
+
+            <button class="btn-location-main" id="btn-gps" onclick="startTracking()">
+                <i class="fas fa-location-arrow"></i> Usar minha localização GPS
+            </button>
+            <p class="location-hint">Ative o GPS para ver em tempo real sua rota a pé pelas passarelas e caminhos do campus.</p>
+        </div>
+    </div>
+
+    <!-- ============================================================
+         TELA 2: SELECIONAR DESTINO & SALAS
+         ============================================================ -->
+    <div id="screen-select" class="screen">
+        <div class="screen-header">
+            <button class="btn-back-round" onclick="switchScreen('screen-home')"><i class="fas fa-chevron-left"></i></button>
+            <h2 id="select-title">Selecionar Destino</h2>
+        </div>
+
+        <div class="select-search-box">
+            <i class="fas fa-search"></i>
+            <input type="text" id="select-search-input" placeholder="Digite número da sala (ex: H-12), bloco ou laboratório..." autocomplete="off">
+            <i class="fas fa-times-circle" style="cursor:pointer;color:var(--text-muted);display:none;" id="btn-clear-search" onclick="clearSearch()"></i>
+        </div>
+
+        <div class="filter-pills" id="select-filter-pills">
+            <button class="pill-btn active" onclick="setSelectPill('Todos', this)">Todos (32)</button>
+            <button class="pill-btn" onclick="setSelectPill('Blocos', this)">Blocos</button>
+            <button class="pill-btn" onclick="setSelectPill('Salas', this)">Salas de Aula</button>
+            <button class="pill-btn" onclick="setSelectPill('Saúde', this)">Saúde & Labs</button>
+            <button class="pill-btn" onclick="setSelectPill('Esportes', this)">Esportes</button>
+            <button class="pill-btn" onclick="setSelectPill('Alimentação', this)">Alimentação</button>
+        </div>
+
+        <div id="destination-list"></div>
+
+        <!-- Floating Destination Preview -->
+        <div class="select-preview-bar" id="select-preview">
+            <div class="preview-top-row">
+                <div class="preview-title-wrap">
+                    <h3 id="preview-name">Bloco E - Biblioteca</h3>
+                    <p id="preview-desc">1º Andar • Acervo e Salas de Estudo</p>
+                </div>
+            </div>
+            <div class="preview-metrics">
+                <div class="metric-pill"><i class="far fa-clock"></i> <span id="preview-time">-- min</span></div>
+                <div class="metric-pill"><i class="fas fa-walking"></i> <span id="preview-dist">-- m</span></div>
+            </div>
+            <div class="preview-btn-row">
+                <button class="btn-action-rooms" id="btn-preview-rooms" onclick="openCurrentBuildingRooms()">
+                    <i class="fas fa-door-open"></i> Ver Salas
+                </button>
+                <button class="btn-action-tracar" onclick="tracarRota()">
+                    <i class="fas fa-directions"></i> Traçar rota
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ============================================================
+         TELA 3: NAVEGACAO GPS
+         ============================================================ -->
+    <div id="screen-nav" class="screen">
+        <div class="map-view" id="map-nav"></div>
+
+        <div class="nav-top-hud">
+            <div class="nav-top-left">
+                <div class="nav-turn-icon"><i class="fas fa-arrow-up" id="nav-turn-icon"></i></div>
+                <div class="nav-top-text">
+                    <h4 id="nav-instruction">Siga em frente</h4>
+                    <p id="nav-dest-label">Destino: Biblioteca</p>
+                </div>
+            </div>
+            <div class="nav-top-right">
+                <div class="time-big" id="nav-time">-- min</div>
+                <div class="dist-small" id="nav-dist">-- m</div>
+            </div>
+        </div>
+
+        <div class="nav-float-actions">
+            <button class="btn-float-action" onclick="recenterMap()" title="Centralizar"><i class="fas fa-crosshairs"></i></button>
+            <button class="btn-float-action" onclick="switchScreen('screen-compass')" title="Bússola"><i class="fas fa-compass"></i></button>
+            <button class="btn-float-action" onclick="openCurrentBuildingRooms()" title="Salas do Bloco"><i class="fas fa-door-open"></i></button>
+        </div>
+
+        <div class="nav-bottom-card">
+            <div class="nav-bottom-row">
+                <div class="nav-bottom-info">
+                    <h4 id="nav-bottom-title">Bloco de Destino</h4>
+                    <p id="nav-bottom-sub">Aproxime-se da entrada principal</p>
+                </div>
+                <button class="btn-nav-stop" onclick="switchScreen('screen-home')">Encerrar</button>
+            </div>
+            <div class="nav-step-bar"><div class="fill" id="nav-progress-fill"></div></div>
+        </div>
+    </div>
+
+    <!-- ============================================================
+         TELA 4: MODO PROXIMIDADE (TIPO AIRTAG)
+         ============================================================ -->
+    <div id="screen-compass" class="screen">
+        <div class="compass-header">
+            <div>
+                <h3 id="compass-dest-name">Biblioteca (Bloco E)</h3>
+                <p id="compass-dest-desc">Bloco E - 1º andar</p>
+            </div>
+            <button class="btn-close-compass" onclick="switchScreen('screen-nav')"><i class="fas fa-times"></i></button>
+        </div>
+
+        <div class="compass-distance-hero">
+            <div class="compass-big-number" id="compass-distance">45 m</div>
+            <div class="compass-big-label" id="compass-label">à sua frente</div>
+        </div>
+
+        <div class="compass-radar-wrap">
+            <div class="radar-disc">
+                <div class="radar-cardinal n">N</div>
+                <div class="radar-cardinal s">S</div>
+                <div class="radar-cardinal o">O</div>
+                <div class="radar-cardinal l">L</div>
+                <svg class="radar-arrow" id="compass-arrow" viewBox="0 0 100 100">
+                    <defs>
+                        <linearGradient id="compassGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+                            <stop offset="0%" style="stop-color:#00E676;stop-opacity:1" />
+                            <stop offset="100%" style="stop-color:#00B060;stop-opacity:1" />
+                        </linearGradient>
+                    </defs>
+                    <path d="M50 4 L68 46 L54 48 L54 86 L46 86 L46 48 L32 46 Z" fill="url(#compassGrad)" />
+                </svg>
+            </div>
+        </div>
+
+        <div class="compass-bottom-card">
+            <div class="turn-box"><i class="fas fa-location-arrow"></i></div>
+            <div>
+                <h4>Siga a seta na direção do prédio</h4>
+                <p>O radar aponta a direção em tempo real</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- ============================================================
+         TELA 5: MAPA COMPLETO DO CAMPUS
+         ============================================================ -->
+    <div id="screen-fullmap" class="screen">
+        <div class="fullmap-header-top">
+            <div class="left-title">
+                <button class="btn-back-round" onclick="switchScreen('screen-home')"><i class="fas fa-chevron-left"></i></button>
+                <h2>Mapa do Campus</h2>
+            </div>
+            <div class="map-mode-toggle">
+                <button class="mode-btn active" id="btn-mode-illustrated" onclick="setMapMode('illustrated')">Ilustrado</button>
+                <button class="mode-btn" id="btn-mode-gps" onclick="setMapMode('gps')">GPS / Satélite</button>
+            </div>
+        </div>
+
+        <div class="fullmap-view-container">
+            <!-- Illustrated Campus SVG Map -->
+            <div id="map-illustrated-container">
+                <svg class="svg-campus-map" viewBox="0 0 1000 580" xmlns="http://www.w3.org/2000/svg">
+                    <!-- Background Grass -->
+                    <rect width="1000" height="580" fill="#cde4b4" />
+
+                    <!-- Roads & Pathways -->
+                    <!-- Av. Costábile Romano (Left curved road) -->
+                    <path d="M 40,0 C 45,180 80,360 100,580 L 145,580 C 125,360 90,180 85,0 Z" fill="#9da3a8" />
+                    <!-- Rua Adolfo Zólo (Bottom curve) -->
+                    <path d="M 90,480 Q 300,420 500,460 T 940,580 L 940,540 Q 500,420 300,380 T 90,440 Z" fill="#b0b7bd" />
+                    <!-- Rua Pedro Pegoraro (Right road) -->
+                    <path d="M 920,80 Q 950,260 920,580 L 950,580 Q 980,260 950,80 Z" fill="#b0b7bd" />
+                    <!-- Internal Campus Pathways -->
+                    <path d="M 120,300 C 180,260 220,240 290,260 C 350,280 430,280 500,290 C 650,300 780,280 920,260" fill="none" stroke="#FFFFFF" stroke-width="14" stroke-linecap="round" />
+                    <path d="M 280,260 C 260,180 280,120 380,110" fill="none" stroke="#FFFFFF" stroke-width="12" stroke-linecap="round" />
+                    <path d="M 460,280 C 450,220 460,160 550,160" fill="none" stroke="#FFFFFF" stroke-width="12" stroke-linecap="round" />
+
+                    <!-- Praça Electro Bonini (Top Left) -->
+                    <rect x="45" y="20" width="80" height="60" rx="8" fill="#a4cf84" />
+                    <text x="85" y="45" font-size="9" font-weight="bold" fill="#2d5e1e" text-anchor="middle">Praça Electro</text>
+                    <text x="85" y="58" font-size="9" font-weight="bold" fill="#2d5e1e" text-anchor="middle">Bonini</text>
+
+                    <!-- Pórtico Entrada Principal -->
+                    <rect x="95" y="290" width="40" height="24" rx="4" fill="#071739" />
+                    <text x="115" y="306" font-size="7" font-weight="bold" fill="#FFB800" text-anchor="middle">PÓRTICO</text>
+
+                    <!-- Soccer Stadium & Athletics Track (Top Right Center) -->
+                    <rect x="560" y="40" width="220" height="110" rx="55" fill="#a93c3c" />
+                    <rect x="575" y="52" width="190" height="86" rx="43" fill="#4d9043" stroke="#FFFFFF" stroke-width="3" />
+                    <line x1="670" y1="52" x2="670" y2="138" stroke="#FFFFFF" stroke-width="2" />
+                    <circle cx="670" cy="95" r="24" fill="none" stroke="#FFFFFF" stroke-width="2" />
+
+                    <!-- Quadras Poliesportivas & Tênis (Center) -->
+                    <rect x="580" y="165" width="60" height="38" rx="4" fill="#2e7d32" stroke="#FFF" stroke-width="1.5" />
+                    <rect x="648" y="165" width="60" height="38" rx="4" fill="#2e7d32" stroke="#FFF" stroke-width="1.5" />
+                    <rect x="580" y="208" width="60" height="38" rx="4" fill="#2e7d32" stroke="#FFF" stroke-width="1.5" />
+                    <rect x="648" y="208" width="60" height="38" rx="4" fill="#2e7d32" stroke="#FFF" stroke-width="1.5" />
+                    <rect x="715" y="175" width="55" height="70" rx="4" fill="#bd6338" stroke="#FFF" stroke-width="1.5" />
+
+                    <!-- Piscinas (Near Center West) -->
+                    <rect x="480" y="150" width="50" height="34" rx="4" fill="#1e88e5" stroke="#FFFFFF" stroke-width="2" />
+                    <rect x="515" y="190" width="20" height="25" rx="3" fill="#039be5" stroke="#FFFFFF" stroke-width="1.5" />
+
+                    <!-- BUILDINGS POLYGONS (Warm UNAERP Orange #e88b39) -->
+                    <!-- Bloco A / Reitoria (Long angled building near entrance) -->
+                    <polygon points="170,140 215,120 280,300 235,320" fill="#e88b39" stroke="#b66015" stroke-width="2" />
+                    <!-- Bloco B -->
+                    <polygon points="190,320 235,300 270,390 225,410" fill="#e88b39" stroke="#b66015" stroke-width="2" />
+                    <!-- Bloco H (06) -->
+                    <polygon points="140,330 185,310 220,410 175,430" fill="#e88b39" stroke="#b66015" stroke-width="2" />
+                    <!-- Bloco G (07 e 08) -->
+                    <polygon points="175,420 210,405 235,465 200,480" fill="#e88b39" stroke="#b66015" stroke-width="2" />
+
+                    <!-- South Strip Buildings (Bloco K, O, D, E, F) -->
+                    <!-- 09 Bloco K -->
+                    <rect x="300" y="370" width="40" height="35" rx="3" fill="#e88b39" stroke="#b66015" stroke-width="2" />
+                    <!-- 10 Bloco O -->
+                    <polygon points="340,320 370,305 385,345 355,360" fill="#e88b39" stroke="#b66015" stroke-width="2" />
+                    <!-- 11 Bloco D -->
+                    <polygon points="380,310 435,285 460,355 405,380" fill="#e88b39" stroke="#b66015" stroke-width="2" />
+                    <!-- 13 Bloco E (Biblioteca) -->
+                    <polygon points="460,290 510,270 535,345 485,365" fill="#e88b39" stroke="#b66015" stroke-width="2" />
+                    <!-- 14 Bloco F (Teatro) -->
+                    <polygon points="535,280 580,265 600,340 555,355" fill="#e88b39" stroke="#b66015" stroke-width="2" />
+
+                    <!-- Center North Buildings (Hospital, Odonto, Pós, Medicina) -->
+                    <!-- 27 Hospital Electro Bonini -->
+                    <polygon points="410,90 470,80 480,140 420,150" fill="#e88b39" stroke="#b66015" stroke-width="2" />
+                    <!-- 28 Bloco M (Odonto) -->
+                    <polygon points="360,105 410,95 420,140 370,150" fill="#e88b39" stroke="#b66015" stroke-width="2" />
+                    <!-- 29 Bloco C (Pós) -->
+                    <polygon points="380,155 425,145 435,185 390,195" fill="#e88b39" stroke="#b66015" stroke-width="2" />
+                    <!-- 30A & 30B -->
+                    <rect x="400" y="200" width="45" height="30" rx="3" fill="#e88b39" stroke="#b66015" stroke-width="2" />
+
+                    <!-- East Strip Buildings (16 Bloco J, 18 Bloco I, 19 Bloco N) -->
+                    <!-- 16 Bloco J -->
+                    <polygon points="760,100 810,90 840,240 790,250" fill="#e88b39" stroke="#b66015" stroke-width="2" />
+                    <!-- 18 Bloco I (Arquitetura & Música) -->
+                    <polygon points="840,260 880,260 880,380 840,380" fill="#e88b39" stroke="#b66015" stroke-width="2" />
+                    <!-- 19 Bloco N -->
+                    <rect x="785" y="300" width="45" height="85" rx="3" fill="#e88b39" stroke="#b66015" stroke-width="2" />
+
+                    <!-- INTERACTIVE NUMBERED PINS (Matching Official UNAERP Map 01 to 30B) -->
+                    <g class="campus-pin" onclick="selectFromPin('01')"><circle cx="230" cy="220" r="14" /><text x="230" y="220">01</text></g>
+                    <g class="campus-pin" onclick="selectFromPin('02A')"><circle cx="215" cy="330" r="14" /><text x="215" y="330">2A</text></g>
+                    <g class="campus-pin" onclick="selectFromPin('02B')"><circle cx="250" cy="350" r="14" /><text x="250" y="350">2B</text></g>
+                    <g class="campus-pin" onclick="selectFromPin('03')"><circle cx="190" cy="140" r="14" /><text x="190" y="140">03</text></g>
+                    <g class="campus-pin" onclick="selectFromPin('04')"><circle cx="260" cy="285" r="14" /><text x="260" y="285">04</text></g>
+                    <g class="campus-pin" onclick="selectFromPin('05')"><circle cx="310" cy="280" r="14" /><text x="310" y="280">05</text></g>
+                    <g class="campus-pin" onclick="selectFromPin('06')"><circle cx="170" cy="380" r="14" /><text x="170" y="380">06</text></g>
+                    <g class="campus-pin" onclick="selectFromPin('07')"><circle cx="200" cy="445" r="14" /><text x="200" y="445">07</text></g>
+                    <g class="campus-pin" onclick="selectFromPin('09')"><circle cx="320" cy="390" r="14" /><text x="320" y="390">09</text></g>
+                    <g class="campus-pin" onclick="selectFromPin('10')"><circle cx="360" cy="340" r="14" /><text x="360" y="340">10</text></g>
+                    <g class="campus-pin" onclick="selectFromPin('11')"><circle cx="420" cy="335" r="14" /><text x="420" y="335">11</text></g>
+                    <g class="campus-pin" onclick="selectFromPin('12')"><circle cx="460" cy="255" r="14" /><text x="460" y="255">12</text></g>
+                    <g class="campus-pin" onclick="selectFromPin('13')"><circle cx="495" cy="320" r="14" /><text x="495" y="320">13</text></g>
+                    <g class="campus-pin" onclick="selectFromPin('14')"><circle cx="568" cy="310" r="14" /><text x="568" y="310">14</text></g>
+                    <g class="campus-pin" onclick="selectFromPin('15')"><circle cx="670" cy="320" r="14" /><text x="670" y="320">15</text></g>
+                    <g class="campus-pin" onclick="selectFromPin('16')"><circle cx="800" cy="180" r="14" /><text x="800" y="180">16</text></g>
+                    <g class="campus-pin" onclick="selectFromPin('17')"><circle cx="830" cy="395" r="14" /><text x="830" y="395">17</text></g>
+                    <g class="campus-pin" onclick="selectFromPin('18')"><circle cx="860" cy="320" r="14" /><text x="860" y="320">18</text></g>
+                    <g class="campus-pin" onclick="selectFromPin('19')"><circle cx="805" cy="340" r="14" /><text x="805" y="340">19</text></g>
+                    <g class="campus-pin" onclick="selectFromPin('20')"><circle cx="750" cy="265" r="14" /><text x="750" y="265">20</text></g>
+                    <g class="campus-pin" onclick="selectFromPin('21')"><circle cx="740" cy="210" r="14" /><text x="740" y="210">21</text></g>
+                    <g class="campus-pin" onclick="selectFromPin('22')"><circle cx="640" cy="200" r="14" /><text x="640" y="200">22</text></g>
+                    <g class="campus-pin" onclick="selectFromPin('23')"><circle cx="670" cy="95" r="14" /><text x="670" y="95">23</text></g>
+                    <g class="campus-pin" onclick="selectFromPin('24')"><circle cx="530" cy="205" r="14" /><text x="530" y="205">24</text></g>
+                    <g class="campus-pin" onclick="selectFromPin('25')"><circle cx="490" cy="240" r="14" /><text x="490" y="240">25</text></g>
+                    <g class="campus-pin" onclick="selectFromPin('26A')"><circle cx="505" cy="165" r="14" /><text x="505" y="165">26</text></g>
+                    <g class="campus-pin" onclick="selectFromPin('27')"><circle cx="450" cy="115" r="14" /><text x="450" y="115">27</text></g>
+                    <g class="campus-pin" onclick="selectFromPin('28')"><circle cx="390" cy="120" r="14" /><text x="390" y="120">28</text></g>
+                    <g class="campus-pin" onclick="selectFromPin('29')"><circle cx="410" cy="170" r="14" /><text x="410" y="170">29</text></g>
+                    <g class="campus-pin" onclick="selectFromPin('30A')"><circle cx="420" cy="215" r="14" /><text x="420" y="215">30</text></g>
+                </svg>
+            </div>
+            <!-- Interactive Leaflet Map for Fullmap -->
+            <div id="map-full"></div>
+        </div>
+
+        <div class="fullmap-legend-sheet">
+            <div class="legend-title-row">
+                <h3>Locais Oficiais do Campus (Legenda)</h3>
+                <span style="font-size:10px;color:var(--text-muted);">Toque para ver salas ou rota</span>
+            </div>
+            <div class="legend-items-grid" id="fullmap-legend-list"></div>
+        </div>
+
+        <div class="bottom-nav">
+            <div class="nav-item" onclick="switchScreen('screen-home')"><i class="fas fa-home"></i><span>Início</span></div>
+            <div class="nav-item active" onclick="switchScreen('screen-fullmap')"><i class="fas fa-map"></i><span>Mapa</span></div>
+            <div class="nav-item" onclick="filterCategory('Salas')"><i class="fas fa-graduation-cap"></i><span>Salas</span></div>
+            <div class="nav-item" onclick="openSearchWithQuery('')"><i class="fas fa-search"></i><span>Buscar</span></div>
+        </div>
+    </div>
+
+</div>
+
+<!-- ============================================================
+     MODAL DE SALAS E DETALHES DO BLOCO
+     ============================================================ -->
+<div class="modal-overlay" id="rooms-modal" onclick="closeRoomsModal(event)">
+    <div class="modal-sheet" onclick="event.stopPropagation()">
+        <div class="modal-drag-handle"></div>
+        <div class="modal-header">
+            <div>
+                <h3 id="modal-building-name">Bloco H — Cursos e Laboratórios</h3>
+                <p id="modal-building-desc">Legenda 06 • Salas de aula, robótica e informática</p>
+            </div>
+            <button class="btn-modal-close" onclick="closeRoomsModal()"><i class="fas fa-times"></i></button>
+        </div>
+        <div class="modal-rooms-scroll" id="modal-rooms-list"></div>
+        <button class="btn-action-tracar" style="margin-top:14px;" onclick="tracarRotaDoModal()">
+            <i class="fas fa-directions"></i> Traçar rota até este Bloco
+        </button>
+    </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<!-- LEAFLET SCRIPTS -->
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://unpkg.com/leaflet-routing-machine@3.2.12/dist/leaflet-routing-machine.js"></script>
+
+<script>
+    /* ============================================================
+       BANCO DE DADOS COMPLETO — TODOS OS 32 LOCAIS OFICIAIS UNAERP
+       E MAPEAMENTO DE TODAS AS SALAS E ANDARES
+       ============================================================ */
+    const buildings = [
+        {
+            id: '01', num: '01', name: "Bloco A - Reitoria e DARA",
+            cat: "Blocos", lat: -21.202398, lng: -47.779552, icon: 'fa-building',
+            desc: "Reitoria, DARA, Registros Acadêmicos e Atendimento Especializado",
+            rooms: [
+                { floor: "Térreo", number: "DARA", name: "Divisão de Registros Acadêmicos (Matrículas/Diplomas)" },
+                { floor: "Térreo", number: "SAE", name: "Serviço de Atendimento Especializado" },
+                { floor: "Térreo", number: "Protocolo", name: "Protocolo Geral e Atendimento ao Aluno" },
+                { floor: "Térreo", number: "Sala A-01", name: "Sala de Reuniões Administrativas" },
+                { floor: "1º Andar", number: "Reitoria", name: "Gabinete da Reitoria e Vice-Reitoria" },
+                { floor: "1º Andar", number: "Jurídico", name: "Assessoria Jurídica e RH" }
+            ]
+        },
+        {
+            id: '02A', num: '02A', name: "Bloco B - Multiatendimento",
+            cat: "Blocos", lat: -21.202803, lng: -47.779707, icon: 'fa-user-check',
+            desc: "Setor de Multiatendimento, Tesouraria e Financeiro",
+            rooms: [
+                { floor: "Térreo", number: "Balcão 1 a 12", name: "Atendimento Integrado ao Aluno" },
+                { floor: "Térreo", number: "Financeiro", name: "Tesouraria e Negociação de Mensalidades" },
+                { floor: "1º Andar", number: "Cobrança", name: "Departamento Financeiro Geral" }
+            ]
+        },
+        {
+            id: '02B', num: '02B', name: "Central de Benefícios",
+            cat: "Blocos", lat: -21.202950, lng: -47.779800, icon: 'fa-hand-holding-usd',
+            desc: "Central de Benefícios, FIES, Prouni e Bolsas de Estudo",
+            rooms: [
+                { floor: "Térreo", number: "Bolsas", name: "Coordenação de Bolsas Prouni e FIES" },
+                { floor: "Térreo", number: "Social", name: "Serviço Social Universitário" }
+            ]
+        },
+        {
+            id: '03', num: '03', name: "Capela Santo Expedito",
+            cat: "Outros", lat: -21.201850, lng: -47.780100, icon: 'fa-church',
+            desc: "Capela Santo Expedito e Pastoral Universitária",
+            rooms: [
+                { floor: "Térreo", number: "Nave", name: "Espaço de Oração e Missas" },
+                { floor: "Térreo", number: "Pastoral", name: "Atendimento Pastoral Universitário" }
+            ]
+        },
+        {
+            id: '04', num: '04', name: "Centro de Convivência",
+            cat: "Outros", lat: -21.202550, lng: -47.779300, icon: 'fa-users',
+            desc: "Centro de Convivência e Empresa Unaerp Júnior",
+            rooms: [
+                { floor: "Térreo", number: "Jr. 01", name: "Sede Unaerp Júnior Empreendedorismo" },
+                { floor: "Térreo", number: "Lazer", name: "Área de Descanso dos Alunos" }
+            ]
+        },
+        {
+            id: '05', num: '05', name: "Praça de Alimentação",
+            cat: "Restaurante", lat: -21.202400, lng: -47.779050, icon: 'fa-coffee',
+            desc: "Praça de Alimentação, Lanchonetes e Cafeterias",
+            rooms: [
+                { floor: "Térreo", number: "Quiosque 1", name: "Cafeteria Central" },
+                { floor: "Térreo", number: "Quiosque 2", name: "Lanchonete e Sucos Naturais" },
+                { floor: "Térreo", number: "Quiosque 3", name: "Doceria e Salgados" }
+            ]
+        },
+        {
+            id: '06', num: '06', name: "Bloco H - Cursos e Laboratórios",
+            cat: "Salas", lat: -21.202868, lng: -47.779203, icon: 'fa-laptop-code',
+            desc: "Salas de aula H-01 a H-218, Labs de Informática, Robótica e Engenharias",
+            rooms: [
+                { floor: "Térreo", number: "Sala H-01 a H-10", name: "Salas de Aula Teóricas" },
+                { floor: "Térreo", number: "Lab H-Inf 1", name: "Laboratório de Informática 1" },
+                { floor: "Térreo", number: "Lab H-Inf 2", name: "Laboratório de Informática 2" },
+                { floor: "1º Andar", number: "Sala H-101 a H-118", name: "Salas de Aulas de TI e Engenharias" },
+                { floor: "1º Andar", number: "Lab Robótica", name: "Laboratório de Robótica e Automação" },
+                { floor: "2º Andar", number: "Sala H-201 a H-218", name: "Salas de Aula Multidisciplinares" },
+                { floor: "2º Andar", number: "Lab Redes", name: "Laboratório de Redes e Hardware" }
+            ]
+        },
+        {
+            id: '07', num: '07 e 08', name: "Bloco G - DCINI",
+            cat: "Blocos", lat: -21.202758, lng: -47.778645, icon: 'fa-globe-americas',
+            desc: "Divisão de Cooperação Nacional e Internacional e Centro de Idiomas",
+            rooms: [
+                { floor: "Térreo", number: "DCINI", name: "Intercâmbio Internacional e Convênios" },
+                { floor: "Térreo", number: "Sala G-01 a G-06", name: "Salas de Aula de Idiomas (Inglês/Espanhol)" }
+            ]
+        },
+        {
+            id: '09', num: '09', name: "Bloco K - Salas de Tutoria Medicina",
+            cat: "Salas", lat: -21.202236, lng: -47.778506, icon: 'fa-user-md',
+            desc: "Salas de Tutorias PBL do Curso de Medicina (Salas K-01 a K-20)",
+            rooms: [
+                { floor: "Térreo", number: "Tutoria K-01 a K-10", name: "Salas de Tutoria PBL Medicina" },
+                { floor: "1º Andar", number: "Tutoria K-11 a K-20", name: "Salas de Tutoria e Discussão Clínica" },
+                { floor: "1º Andar", number: "Simulação", name: "Laboratório de Simulação de Casos" }
+            ]
+        },
+        {
+            id: '10', num: '10', name: "Bloco O - Suprimentos e Infraestrutura",
+            cat: "Blocos", lat: -21.201896, lng: -47.778527, icon: 'fa-boxes',
+            desc: "Setor de Almoxarifado Central, Manutenção e Infraestrutura",
+            rooms: [
+                { floor: "Térreo", number: "Almoxarifado", name: "Recepção e Armazenamento de Materiais" },
+                { floor: "Térreo", number: "Manutenção", name: "Oficinas Prediais e Engenharia de Apoio" }
+            ]
+        },
+        {
+            id: '11', num: '11', name: "Bloco D - Cursos e Laboratórios",
+            cat: "Salas", lat: -21.201611, lng: -47.778534, icon: 'fa-graduation-cap',
+            desc: "Salas D-01 a D-215, Direito, Negócios, Humanas e Labs",
+            rooms: [
+                { floor: "Térreo", number: "Sala D-01 a D-10", name: "Salas de Aula de Direito" },
+                { floor: "Térreo", number: "NPJ", name: "Núcleo de Prática Jurídica" },
+                { floor: "1º Andar", number: "Sala D-101 a D-115", name: "Salas de Administração e Ciências Contábeis" },
+                { floor: "2º Andar", number: "Sala D-201 a D-215", name: "Salas de Aula Gerais" }
+            ]
+        },
+        {
+            id: '12', num: '12', name: "Academia Geraldo Barreto",
+            cat: "Academia", lat: -21.201700, lng: -47.778200, icon: 'fa-dumbbell',
+            desc: "Academia de Ginástica Geraldo Barreto e Musculação",
+            rooms: [
+                { floor: "Térreo", number: "Musculação", name: "Sala Principal de Aparelhos e Pesos Livres" },
+                { floor: "Térreo", number: "Cardio", name: "Esteiras e Bicicletas Ergométricas" },
+                { floor: "1º Andar", number: "Aulas", name: "Sala de Pilates, Lutas e Dança" }
+            ]
+        },
+        {
+            id: '13', num: '13', name: "Bloco E - Biblioteca Central",
+            cat: "Biblioteca", lat: -21.201356, lng: -47.778443, icon: 'fa-book-reader',
+            desc: "Acervo Central, Cabines Individuais e Salas de Estudo em Grupo",
+            rooms: [
+                { floor: "Térreo", number: "Balcão", name: "Empréstimo e Devolução de Livros" },
+                { floor: "Térreo", number: "Grupo E-01 a E-08", name: "Salas de Estudo em Grupo" },
+                { floor: "Térreo", number: "Pesquisa", name: "Computadores de Consulta e Catálogo" },
+                { floor: "1º Andar", number: "Silenciosa", name: "Área de Estudo Individual Silencioso" },
+                { floor: "1º Andar", number: "Periódicos", name: "Obras Raras, Revistas Científicas e TCCs" }
+            ]
+        },
+        {
+            id: '14', num: '14', name: "Bloco F - Teatro e TV UNAERP",
+            cat: "Blocos", lat: -21.200865, lng: -47.778373, icon: 'fa-theater-masks',
+            desc: "Teatro Bassano Vaccarini, TV UNAERP e Labs de Comunicação",
+            rooms: [
+                { floor: "Térreo", number: "Teatro", name: "Teatro Bassano Vaccarini (Cap. 350 pessoas)" },
+                { floor: "1º Andar", number: "TV UNAERP", name: "Estúdio de TV e Gravação de Programas" },
+                { floor: "1º Andar", number: "Rádio", name: "Estúdio de Rádio e Podcast" },
+                { floor: "2º Andar", number: "Sala F-201 a F-210", name: "Salas de Publicidade e Jornalismo" }
+            ]
+        },
+        {
+            id: '15', num: '15', name: "Estacionamento Alunos e Professores",
+            cat: "Transporte", lat: -21.201500, lng: -47.777800, icon: 'fa-parking',
+            desc: "Estacionamento amplo e seguro para alunos, professores e visitantes",
+            rooms: [
+                { floor: "Térreo", number: "Vagas Setor 1", name: "Estacionamento Geral Alunos" },
+                { floor: "Térreo", number: "Vagas Setor 2", name: "Vagas Preferenciais e Docentes" }
+            ]
+        },
+        {
+            id: '16', num: '16', name: "Bloco J - Farmácia e Enfermagem",
+            cat: "Salas", lat: -21.200500, lng: -47.777300, icon: 'fa-syringe',
+            desc: "Cursos de Farmácia, Enfermagem e Labs de Anatomia/Microscopia",
+            rooms: [
+                { floor: "Térreo", number: "Anatomia", name: "Laboratório de Anatomia Humana (Morfologia)" },
+                { floor: "Térreo", number: "Sala J-01 a J-08", name: "Salas de Aula da Saúde" },
+                { floor: "1º Andar", number: "Microscopia", name: "Laboratório de Histologia e Microscopia" },
+                { floor: "1º Andar", number: "Semiologia", name: "Laboratório de Práticas de Enfermagem" },
+                { floor: "2º Andar", number: "Sala J-201 a J-212", name: "Salas de Aula e Bioquímica" }
+            ]
+        },
+        {
+            id: '17', num: '17', name: "Galpão de Eng. Civil",
+            cat: "Blocos", lat: -21.201200, lng: -47.777000, icon: 'fa-hard-hat',
+            desc: "Laboratório de Ensaios Mecânicos, Concreto, Solos e Topografia",
+            rooms: [
+                { floor: "Térreo", number: "Lab Solos", name: "Laboratório de Mecânica dos Solos" },
+                { floor: "Térreo", number: "Lab Concreto", name: "Prensa Hidráulica e Canteiro Experimental" }
+            ]
+        },
+        {
+            id: '18', num: '18', name: "Bloco I - Arquitetura e Música",
+            cat: "Salas", lat: -21.201800, lng: -47.777200, icon: 'fa-pencil-ruler',
+            desc: "Ateliês de Desenho, Maquetaria e Salas de Instrumentos Musicais",
+            rooms: [
+                { floor: "Térreo", number: "Maquetaria", name: "Laboratório de Maquetes e Modelagem 3D" },
+                { floor: "Térreo", number: "Ateliê 1 e 2", name: "Pranchetas de Desenho e Projeto" },
+                { floor: "1º Andar", number: "Música 1 a 6", name: "Salas Acústicas de Ensaio e Piano" },
+                { floor: "1º Andar", number: "Sala I-101 a I-110", name: "Salas de Aula de Urbanismo e Teoria" }
+            ]
+        },
+        {
+            id: '19', num: '19', name: "Bloco N - Farmácia Universitária",
+            cat: "Hospital", lat: -21.200900, lng: -47.777250, icon: 'fa-pills',
+            desc: "Farmácia Universitária Cidinha Bonini e Biotecnologia",
+            rooms: [
+                { floor: "Térreo", number: "Dispensação", name: "Atendimento Farmacêutico ao Público" },
+                { floor: "Térreo", number: "Manipulação", name: "Laboratório de Farmacotécnica e Cosméticos" },
+                { floor: "1º Andar", number: "Biotecnologia", name: "Unidade de Pesquisa Genética e Biologia Molecular" }
+            ]
+        },
+        {
+            id: '20', num: '20', name: "Plantas Medicinais",
+            cat: "Outros", lat: -21.201400, lng: -47.777500, icon: 'fa-leaf',
+            desc: "Horto e Coleção de Plantas Medicinais para Pesquisa Farmacêutica",
+            rooms: [
+                { floor: "Térreo", number: "Canteiros", name: "Cultivo Didático de Espécies Medicinais" }
+            ]
+        },
+        {
+            id: '21', num: '21', name: "Quadras de Tênis e Vôlei",
+            cat: "Quadras", lat: -21.201100, lng: -47.777800, icon: 'fa-baseball-ball',
+            desc: "Quadras de Tênis de Saibro e Quadra de Vôlei de Areia",
+            rooms: [
+                { floor: "Térreo", number: "Tênis 1 e 2", name: "Quadras de Saibro Oficiais" },
+                { floor: "Térreo", number: "Areia", name: "Quadra de Vôlei e Futevôlei de Areia" }
+            ]
+        },
+        {
+            id: '22', num: '22', name: "Quadras Poliesportivas",
+            cat: "Quadras", lat: -21.201000, lng: -47.778100, icon: 'fa-basketball-ball',
+            desc: "Quadras cobertas e iluminadas para futsal, basquete e handebol",
+            rooms: [
+                { floor: "Térreo", number: "Quadra 1", name: "Futsal e Handebol Principal" },
+                { floor: "Térreo", number: "Quadra 2", name: "Basquete e Vôlei" }
+            ]
+        },
+        {
+            id: '23', num: '23', name: "Campo de Futebol e Atletismo",
+            cat: "Quadras", lat: -21.200300, lng: -47.778500, icon: 'fa-futbol',
+            desc: "Campo de Futebol com medidas oficiais e Pista de Atletismo",
+            rooms: [
+                { floor: "Térreo", number: "Campo", name: "Gramado Oficial de Futebol" },
+                { floor: "Térreo", number: "Pista", name: "Pista Circular de Corrida e Saltos" }
+            ]
+        },
+        {
+            id: '24', num: '24', name: "Bloco L - Ed. Física",
+            cat: "Salas", lat: -21.201300, lng: -47.778800, icon: 'fa-running',
+            desc: "Curso de Educação Física, Laboratório de Biomecânica e Fisiologia",
+            rooms: [
+                { floor: "Térreo", number: "Biomecânica", name: "Laboratório de Avaliação do Movimento" },
+                { floor: "Térreo", number: "Sala L-01 a L-06", name: "Salas de Aula Teóricas de Ed. Física" }
+            ]
+        },
+        {
+            id: '25', num: '25', name: "Restaurante Universitário",
+            cat: "Restaurante", lat: -21.200725, lng: -47.779017, icon: 'fa-utensils',
+            desc: "Refeições completas (almoço e jantar) para a comunidade acadêmica",
+            rooms: [
+                { floor: "Térreo", number: "Salão", name: "Linha de Servir e Refeitório" },
+                { floor: "Térreo", number: "Caixa RU", name: "Recarga de Cartão Universitário" }
+            ]
+        },
+        {
+            id: '26A', num: '26A e 26B', name: "Piscinas Semiolímpica e Hidro",
+            cat: "Quadras", lat: -21.201200, lng: -47.779200, icon: 'fa-swimming-pool',
+            desc: "Piscina Semiolímpica (26A) e Piscina de Hidroginástica Aquecida (26B)",
+            rooms: [
+                { floor: "Térreo", number: "Piscina 26A", name: "Piscina Semiolímpica de Natação" },
+                { floor: "Térreo", number: "Piscina 26B", name: "Piscina Aquecida de Hidroginástica e Reabilitação" }
+            ]
+        },
+        {
+            id: '27', num: '27', name: "Hospital Electro Bonini",
+            cat: "Hospital", lat: -21.201121, lng: -47.779977, icon: 'fa-hospital-user',
+            desc: "Hospital Electro Bonini, Pronto Atendimento Escola e Especialidades",
+            rooms: [
+                { floor: "Térreo", number: "PA Escola", name: "Pronto Atendimento e Triagem Geral" },
+                { floor: "Térreo", number: "Ambulatórios 1 a 20", name: "Consultórios de Pediatria, Clínica e Cirurgia" },
+                { floor: "1º Andar", number: "Internação", name: "Enfermarias e Posto de Enfermagem" },
+                { floor: "2º Andar", number: "Diretoria HEB", name: "Administração e Salas de Aula Hospitalares" }
+            ]
+        },
+        {
+            id: '28', num: '28', name: "Bloco M - Clínicas Odontológicas",
+            cat: "Hospital", lat: -21.201500, lng: -47.779600, icon: 'fa-tooth',
+            desc: "Curso e Clínicas de Odontologia 1 a 4, Radiologia e Prótese",
+            rooms: [
+                { floor: "Térreo", number: "Clínica 1", name: "Clínica Odontológica Integrada (40 mochos)" },
+                { floor: "Térreo", number: "Esterilização", name: "Central de Esterilização de Instrumentais" },
+                { floor: "1º Andar", number: "Clínica 2 e 3", name: "Clínica de Endodontia e Cirurgia Bucomaxilo" },
+                { floor: "1º Andar", number: "Radiologia", name: "Tomografia e Raio-X Odontológico" },
+                { floor: "2º Andar", number: "Sala M-201 a M-210", name: "Salas de Aulas Teóricas de Odontologia" }
+            ]
+        },
+        {
+            id: '29', num: '29', name: "Bloco C - Pós-Graduação",
+            cat: "Salas", lat: -21.201472, lng: -47.779825, icon: 'fa-user-graduate',
+            desc: "Divisão de Pós-Graduação, Mestrado, Doutorado e Defesa de Teses",
+            rooms: [
+                { floor: "Térreo", number: "Secretaria Pós", name: "Atendimento a Mestrandos e Doutorandos" },
+                { floor: "Térreo", number: "Auditório C", name: "Auditório de Defesas de Dissertações" },
+                { floor: "1º Andar", number: "Sala C-101 a C-108", name: "Salas de Aula da Pós-Graduação" }
+            ]
+        },
+        {
+            id: '30A', num: '30A', name: "Secretaria de Medicina",
+            cat: "Blocos", lat: -21.201650, lng: -47.779500, icon: 'fa-stethoscope',
+            desc: "Secretaria Geral do Curso de Medicina e Coordenação de Internato",
+            rooms: [
+                { floor: "Térreo", number: "Coordenação", name: "Coordenação do Curso de Medicina" },
+                { floor: "Térreo", number: "Internato", name: "Setor de Estágios e Internato Médico" }
+            ]
+        },
+        {
+            id: '30B', num: '30B', name: "Núcleo Multiprofissional",
+            cat: "Hospital", lat: -21.201750, lng: -47.779600, icon: 'fa-clinic-medical',
+            desc: "Núcleo de Atendimento Multiprofissional: Fisio, Nutrição, Psico e Fono",
+            rooms: [
+                { floor: "Térreo", number: "Fisioterapia", name: "Clínica de Reabilitação Fisioterapêutica" },
+                { floor: "Térreo", number: "Psicologia", name: "Consultórios de Psicologia Aplicada" },
+                { floor: "1º Andar", number: "Nutrição / Fono", name: "Ambulatório de Nutrição e Fonoaudiologia" }
+            ]
+        }
+    ];
+
+    /* ============================================================
+       ESTADO GLOBAL
+       ============================================================ */
+    let mapNav, mapFull;
+    let userLat = null, userLng = null, userAccuracy = null;
+    let userMarker = null, accuracyCircle = null;
+    let destLat = null, destLng = null, destId = null, destName = null, destDesc = null, destIcon = null;
+    let routingControl = null, destMarker = null;
+    let lastHeading = 0;
+    let watchId = null;
+    let activeBuilding = null;
+    let activePillCategory = 'Todos';
+
+    const defaultCenter = [-21.2019, -47.7791];
+
+    /* ============================================================
+       INICIALIZACAO DOS MAPAS
+       ============================================================ */
+    function initMaps() {
+        // Map Nav
+        mapNav = L.map('map-nav', { zoomControl: false, preferCanvas: true }).setView(defaultCenter, 17);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            maxZoom: 19, attribution: '© OSM'
+        }).addTo(mapNav);
+
+        // Map Full (GPS)
+        mapFull = L.map('map-full', { zoomControl: false }).setView(defaultCenter, 16);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            maxZoom: 19, attribution: '© OSM'
+        }).addTo(mapFull);
+
+        // Add custom markers with badges
+        buildings.forEach(loc => {
+            const iconHtml = `<div style="background:#071739;color:#FFB800;font-weight:900;font-size:10px;border-radius:50%;width:26px;height:26px;display:flex;align-items:center;justify-content:center;border:2px solid #FFF;box-shadow:0 2px 6px rgba(0,0,0,0.3);">${loc.num}</div>`;
+            const customIcon = L.divIcon({ html: iconHtml, className: '', iconSize: [26, 26], iconAnchor: [13, 13] });
+            
+            L.marker([loc.lat, loc.lng], { icon: customIcon }).addTo(mapNav)
+                .bindPopup(`<b>${loc.num} - ${loc.name}</b><br><small>${loc.desc}</small>`);
+
+            L.marker([loc.lat, loc.lng], { icon: customIcon }).addTo(mapFull)
+                .bindPopup(`<b>${loc.num} - ${loc.name}</b><br><small>${loc.desc}</small>`)
+                .on('click', () => selectDestination(loc));
+        });
+    }
+
+    /* ============================================================
+       POPULARES NA HOME
+       ============================================================ */
+    function setupPopular() {
+        const popIds = ['13', '25', '01', '27', '06', '11', '09', '28'];
+        const popular = popIds.map(id => buildings.find(b => b.id === id)).filter(Boolean);
+        const container = document.getElementById('popular-scroll');
+        container.innerHTML = '';
+
+        popular.forEach(loc => {
+            const card = document.createElement('div');
+            card.className = 'popular-card';
+            card.innerHTML = `
+                <div class="badge-num">${loc.num}</div>
+                <h4>${loc.name}</h4>
+                <p>${loc.desc}</p>
+            `;
+            card.onclick = () => {
+                selectDestination(loc);
+                switchScreen('screen-select');
+            };
+            container.appendChild(card);
+        });
+    }
+
+    /* ============================================================
+       LEGENDA OFICIAL NA TELA 5
+       ============================================================ */
+    function renderFullmapLegend() {
+        const list = document.getElementById('fullmap-legend-list');
+        list.innerHTML = '';
+
+        buildings.forEach(loc => {
+            const row = document.createElement('div');
+            row.className = 'legend-row-item';
+            row.innerHTML = `
+                <div class="legend-badge">${loc.num}</div>
+                <div class="legend-info">
+                    <h5>${loc.name}</h5>
+                    <p>${loc.desc}</p>
+                </div>
+                <button class="btn-view-rooms" onclick="event.stopPropagation();openRoomsModalById('${loc.id}')">
+                    <i class="fas fa-door-open"></i> Salas (${loc.rooms ? loc.rooms.length : 0})
+                </button>
+            `;
+            row.onclick = () => {
+                selectDestination(loc);
+                switchScreen('screen-select');
+            };
+            list.appendChild(row);
+        });
+    }
+
+    function setMapMode(mode) {
+        const illCont = document.getElementById('map-illustrated-container');
+        const gpsMap = document.getElementById('map-full');
+        const btnIll = document.getElementById('btn-mode-illustrated');
+        const btnGps = document.getElementById('btn-mode-gps');
+
+        if (mode === 'illustrated') {
+            illCont.style.display = 'flex';
+            gpsMap.style.display = 'none';
+            btnIll.classList.add('active');
+            btnGps.classList.remove('active');
+        } else {
+            illCont.style.display = 'none';
+            gpsMap.style.display = 'block';
+            btnGps.classList.add('active');
+            btnIll.classList.remove('active');
+            setTimeout(() => { if (mapFull) mapFull.invalidateSize(); }, 100);
+        }
+    }
+
+    function selectFromPin(num) {
+        const b = buildings.find(item => item.id === num || item.num.includes(num));
+        if (b) {
+            selectDestination(b);
+            switchScreen('screen-select');
+            toast(`Selecionado: ${b.name}`);
+        }
+    }
+
+    /* ============================================================
+       SELEÇÃO DE DESTINO E BUSCA DE TODAS AS SALAS
+       ============================================================ */
+    function filterCategory(cat) {
+        switchScreen('screen-select');
+        document.getElementById('select-search-input').value = '';
+        activePillCategory = cat;
+
+        // update active pill
+        document.querySelectorAll('#select-filter-pills .pill-btn').forEach(btn => {
+            btn.classList.toggle('active', btn.textContent.includes(cat));
+        });
+
+        renderDestinationList();
+    }
+
+    function setSelectPill(pillName, element) {
+        document.querySelectorAll('#select-filter-pills .pill-btn').forEach(btn => btn.classList.remove('active'));
+        element.classList.add('active');
+        activePillCategory = pillName;
+        renderDestinationList();
+    }
+
+    function renderDestinationList() {
+        const query = document.getElementById('select-search-input').value.toLowerCase().trim();
+        const list = document.getElementById('destination-list');
+        list.innerHTML = '';
+
+        let results = [];
+
+        buildings.forEach(b => {
+            const matchesQuery = !query || 
+                b.name.toLowerCase().includes(query) || 
+                b.desc.toLowerCase().includes(query) || 
+                b.num.toLowerCase().includes(query) ||
+                (b.rooms && b.rooms.some(r => r.number.toLowerCase().includes(query) || r.name.toLowerCase().includes(query)));
+
+            if (!matchesQuery) return;
+
+            if (activePillCategory === 'Todos') {
+                results.push({ building: b, matchedRoom: null });
+            } else if (activePillCategory === 'Blocos' && b.cat === 'Blocos') {
+                results.push({ building: b, matchedRoom: null });
+            } else if (activePillCategory === 'Salas') {
+                if (b.rooms && b.rooms.length > 0) {
+                    results.push({ building: b, matchedRoom: null });
+                }
+            } else if (activePillCategory === 'Saúde' && (b.cat === 'Hospital' || b.id === '09' || b.id === '16')) {
+                results.push({ building: b, matchedRoom: null });
+            } else if (activePillCategory === 'Esportes' && (b.cat === 'Quadras' || b.cat === 'Academia')) {
+                results.push({ building: b, matchedRoom: null });
+            } else if (activePillCategory === 'Alimentação' && b.cat === 'Restaurante') {
+                results.push({ building: b, matchedRoom: null });
+            } else if (b.cat === activePillCategory) {
+                results.push({ building: b, matchedRoom: null });
+            }
+        });
+
+        if (results.length === 0) {
+            list.innerHTML = `
+                <div style="text-align:center;padding:40px 20px;color:var(--text-secondary);">
+                    <i class="fas fa-search" style="font-size:28px;opacity:0.3;margin-bottom:12px;"></i>
+                    <p style="font-size:13px;font-weight:700;">Nenhuma sala ou bloco encontrado</p>
+                    <p style="font-size:11px;opacity:0.75;margin-top:4px;">Tente buscar pelo número do bloco (ex: 06, 11) ou nome da sala.</p>
+                </div>
+            `;
+            return;
+        }
+
+        results.forEach(({ building: b }) => {
+            const isSelected = activeBuilding && activeBuilding.id === b.id;
+            let distHtml = '';
+            if (userLat) {
+                const d = haversine(userLat, userLng, b.lat, b.lng);
+                distHtml = `<span class="dest-badge-dist"><i class="fas fa-walking"></i> ${Math.round(d)}m</span>`;
+            }
+
+            const roomCount = b.rooms ? b.rooms.length : 0;
+            const roomBadge = roomCount > 0 ? `<span class="dest-badge-room"><i class="fas fa-door-open"></i> ${roomCount} salas mapeadas</span>` : '';
+
+            const card = document.createElement('div');
+            card.className = `dest-card ${isSelected ? 'is-selected' : ''}`;
+            card.innerHTML = `
+                <div class="dest-num-tag">${b.num}</div>
+                <div class="dest-main-info">
+                    <h4>${b.name}</h4>
+                    <p>${b.desc}</p>
+                    <div class="dest-badges">
+                        ${distHtml}
+                        ${roomBadge}
+                    </div>
+                </div>
+                <div class="dest-action-btns">
+                    ${roomCount > 0 ? `<button class="btn-view-rooms" onclick="event.stopPropagation();openRoomsModalById('${b.id}')">Salas</button>` : ''}
+                    <i class="fas fa-chevron-right" style="font-size:12px;color:var(--text-muted);"></i>
+                </div>
+            `;
+            card.onclick = () => selectDestination(b);
+            list.appendChild(card);
+        });
+    }
+
+    function selectDestination(b) {
+        activeBuilding = b;
+        destLat = b.lat;
+        destLng = b.lng;
+        destId = b.id;
+        destName = b.name;
+        destDesc = b.desc;
+        destIcon = b.icon;
+
+        document.getElementById('preview-name').textContent = b.name;
+        document.getElementById('preview-desc').textContent = `${b.num} • ${b.desc}`;
+
+        if (userLat) {
+            const dist = haversine(userLat, userLng, destLat, destLng);
+            document.getElementById('preview-time').textContent = `${Math.ceil(dist / 80)} min`;
+            document.getElementById('preview-dist').textContent = `${Math.round(dist)} m`;
+        } else {
+            document.getElementById('preview-time').textContent = '-- min';
+            document.getElementById('preview-dist').textContent = '-- m';
+        }
+
+        const previewBar = document.getElementById('select-preview');
+        previewBar.classList.add('active');
+
+        // highlight selected card in list
+        document.querySelectorAll('.dest-card').forEach(card => card.classList.remove('is-selected'));
+        renderDestinationList();
+    }
+
+    function openSearchWithQuery(q) {
+        switchScreen('screen-select');
+        const input = document.getElementById('select-search-input');
+        input.value = q;
+        input.focus();
+        document.getElementById('btn-clear-search').style.display = q ? 'block' : 'none';
+        renderDestinationList();
+    }
+
+    function clearSearch() {
+        document.getElementById('select-search-input').value = '';
+        document.getElementById('btn-clear-search').style.display = 'none';
+        renderDestinationList();
+    }
+
+    document.getElementById('select-search-input').addEventListener('input', (e) => {
+        const val = e.target.value;
+        document.getElementById('btn-clear-search').style.display = val ? 'block' : 'none';
+        renderDestinationList();
+    });
+
+    /* ============================================================
+       MODAL DE SALAS POR ANDAR
+       ============================================================ */
+    function openCurrentBuildingRooms() {
+        if (activeBuilding) openRoomsModalById(activeBuilding.id);
+        else if (destId) openRoomsModalById(destId);
+        else toast("Selecione um bloco primeiro");
+    }
+
+    function openRoomsModalById(id) {
+        const b = buildings.find(item => item.id === id);
+        if (!b) return;
+
+        activeBuilding = b;
+        document.getElementById('modal-building-name').textContent = `${b.num} — ${b.name}`;
+        document.getElementById('modal-building-desc').textContent = b.desc;
+
+        const container = document.getElementById('modal-rooms-list');
+        container.innerHTML = '';
+
+        if (!b.rooms || b.rooms.length === 0) {
+            container.innerHTML = '<p style="font-size:12px;color:var(--text-secondary);padding:20px;text-align:center;">Nenhuma sala específica cadastrada para este local.</p>';
+        } else {
+            // Group rooms by floor
+            const floors = {};
+            b.rooms.forEach(r => {
+                if (!floors[r.floor]) floors[r.floor] = [];
+                floors[r.floor].push(r);
+            });
+
+            for (const [floorName, roomArr] of Object.entries(floors)) {
+                const group = document.createElement('div');
+                group.className = 'floor-group';
+                let roomsHtml = '';
+                roomArr.forEach(r => {
+                    roomsHtml += `
+                        <div class="room-row">
+                            <div class="room-row-left">
+                                <h5>${r.number}</h5>
+                                <p>${r.name}</p>
+                            </div>
+                            <button class="btn-navigate-room" onclick="navigateToRoom('${b.id}', '${r.number}')">
+                                <i class="fas fa-location-arrow"></i> Navegar
+                            </button>
+                        </div>
+                    `;
+                });
+
+                group.innerHTML = `
+                    <div class="floor-group-title"><i class="fas fa-layer-group"></i> ${floorName}</div>
+                    ${roomsHtml}
+                `;
+                container.appendChild(group);
+            }
+        }
+
+        document.getElementById('rooms-modal').classList.add('open');
+    }
+
+    function closeRoomsModal(e) {
+        document.getElementById('rooms-modal').classList.remove('open');
+    }
+
+    function navigateToRoom(buildingId, roomNumber) {
+        closeRoomsModal();
+        const b = buildings.find(item => item.id === buildingId);
+        if (b) {
+            selectDestination(b);
+            toast(`Destino definido: ${roomNumber} (${b.name})`);
+            tracarRota();
+        }
+    }
+
+    function tracarRotaDoModal() {
+        closeRoomsModal();
+        if (activeBuilding) {
+            selectDestination(activeBuilding);
+            tracarRota();
+        }
+    }
+
+    /* ============================================================
+       TRAÇAR ROTA E NAVEGAÇÃO
+       ============================================================ */
+    function tracarRota() {
+        if (!destLat || !destLng) {
+            toast("Selecione um destino primeiro");
+            return;
+        }
+
+        if (!userLat || !userLng) {
+            toast("Obtendo sua posição GPS para traçar o caminho...");
+            startTracking(() => {
+                switchScreen('screen-nav');
+                setupRouteOnMap();
+            });
+            return;
+        }
+
+        switchScreen('screen-nav');
+        setupRouteOnMap();
+    }
+
+    function setupRouteOnMap() {
+        if (destMarker) mapNav.removeLayer(destMarker);
+        destMarker = L.marker([destLat, destLng]).addTo(mapNav)
+            .bindPopup(`<b>${destName}</b><br>${destDesc}`).openPopup();
+
+        document.getElementById('nav-instruction').textContent = `Rumo a ${destName}`;
+        document.getElementById('nav-dest-label').textContent = destDesc;
+
+        document.getElementById('compass-dest-name').textContent = destName;
+        document.getElementById('compass-dest-desc').textContent = destDesc;
+
+        if (userLat) {
+            const dist = haversine(userLat, userLng, destLat, destLng);
+            document.getElementById('nav-dist').textContent = `${Math.round(dist)} m`;
+            document.getElementById('nav-time').textContent = `${Math.ceil(dist / 80)} min`;
+            document.getElementById('compass-distance').textContent = `${Math.round(dist)} m`;
+
+            if (routingControl) mapNav.removeControl(routingControl);
+
+            routingControl = L.Routing.control({
+                waypoints: [
+                    L.latLng(userLat, userLng),
+                    L.latLng(destLat, destLng)
+                ],
+                router: L.Routing.osrmv1({
+                    serviceUrl: 'https://routing.openstreetmap.de/routed-foot/route/v1',
+                    profile: 'foot'
+                }),
+                lineOptions: {
+                    styles: [{ color: '#1D58CD', weight: 6, opacity: 0.9, lineCap: 'round', lineJoin: 'round' }]
+                },
+                show: false,
+                addWaypoints: false,
+                fitSelectedRoutes: true
+            }).addTo(mapNav);
+
+            routingControl.on('routesfound', (e) => {
+                const routes = e.routes;
+                const summary = routes[0].summary;
+                document.getElementById('nav-dist').textContent = `${Math.round(summary.totalDistance)} m`;
+                document.getElementById('nav-time').textContent = `${Math.ceil(summary.totalTime / 60)} min`;
+                document.getElementById('compass-distance').textContent = `${Math.round(summary.totalDistance)} m`;
+            });
+        }
+    }
+
+    /* ============================================================
+       GPS EM TEMPO REAL
+       ============================================================ */
+    function startTracking(callback) {
+        if (!navigator.geolocation) {
+            toast("GPS não suportado no navegador");
+            return;
+        }
+
+        toast("Buscando sinal GPS do Campus UNAERP...");
+        const btn = document.getElementById('btn-gps');
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Localizando...';
+
+        navigator.geolocation.getCurrentPosition(
+            (pos) => {
+                handlePosition(pos);
+                btn.innerHTML = '<i class="fas fa-check"></i> GPS Conectado';
+                toast("Localização GPS obtida!");
+                if (callback) callback();
+            },
+            (err) => {
+                toast("Simulando posição no Pórtico Principal UNAERP");
+                // Fallback to Campus entrance
+                handlePosition({
+                    coords: { latitude: -21.203190, longitude: -47.779575, accuracy: 10 }
+                });
+                btn.innerHTML = '<i class="fas fa-location-arrow"></i> Usar minha localização GPS';
+                if (callback) callback();
+            },
+            { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+        );
+
+        if (watchId) navigator.geolocation.clearWatch(watchId);
+        watchId = navigator.geolocation.watchPosition(
+            (pos) => handlePosition(pos),
+            (err) => console.log(err),
+            { enableHighAccuracy: true, maximumAge: 2000, timeout: 10000 }
+        );
+    }
+
+    function handlePosition(pos) {
+        userLat = pos.coords.latitude;
+        userLng = pos.coords.longitude;
+        userAccuracy = pos.coords.accuracy;
+
+        if (userMarker) {
+            userMarker.setLatLng([userLat, userLng]);
+            if (accuracyCircle) accuracyCircle.setLatLng([userLat, userLng]).setRadius(userAccuracy);
+        } else {
+            accuracyCircle = L.circle([userLat, userLng], {
+                color: '#1D58CD', fillColor: '#1D58CD', fillOpacity: 0.1, weight: 1, radius: userAccuracy
+            }).addTo(mapNav);
+
+            userMarker = L.circleMarker([userLat, userLng], {
+                color: '#FFF', weight: 3, fillColor: '#1D58CD', fillOpacity: 1, radius: 9
+            }).addTo(mapNav).bindPopup("Você está aqui");
+        }
+
+        if (destLat && destLng) {
+            const dist = haversine(userLat, userLng, destLat, destLng);
+            document.getElementById('compass-distance').textContent = `${Math.round(dist)} m`;
+            document.getElementById('nav-dist').textContent = `${Math.round(dist)} m`;
+            updateCompassHeading();
+        }
+    }
+
+    function recenterMap() {
+        if (userLat && userLng) {
+            mapNav.setView([userLat, userLng], 18);
+        } else {
+            mapNav.setView(defaultCenter, 17);
+        }
+    }
+
+    /* ============================================================
+       BÚSSOLA / MODO PROXIMIDADE
+       ============================================================ */
+    if (window.DeviceOrientationEvent) {
+        window.addEventListener('deviceorientation', (e) => {
+            let heading = null;
+            if (e.webkitCompassHeading !== undefined) heading = e.webkitCompassHeading;
+            else if (e.alpha !== null) heading = 360 - e.alpha;
+
+            if (heading !== null) {
+                lastHeading = heading;
+                updateCompassHeading();
+            }
+        });
+    }
+
+    function updateCompassHeading() {
+        if (!userLat || !destLat) return;
+        const dy = destLat - userLat;
+        const dx = Math.cos(Math.PI / 180 * userLat) * (destLng - userLng);
+        let angleToDest = Math.atan2(dx, dy) * 180 / Math.PI;
+        angleToDest = (angleToDest + 360) % 360;
+
+        const rotation = angleToDest - lastHeading;
+        const arrow = document.getElementById('compass-arrow');
+        if (arrow) arrow.style.transform = `rotate(${rotation}deg)`;
+
+        const absRot = Math.abs(((rotation + 180) % 360) - 180);
+        const label = document.getElementById('compass-label');
+        if (absRot < 20) label.textContent = 'à sua frente';
+        else if (absRot < 60) label.textContent = 'levemente à frente';
+        else if (absRot < 120) label.textContent = rotation > 0 ? 'à sua direita' : 'à sua esquerda';
+        else label.textContent = 'atrás de você';
+    }
+
+    /* ============================================================
+       UTILITÁRIOS
+       ============================================================ */
+    function haversine(lat1, lon1, lat2, lon2) {
+        const R = 6371e3;
+        const p1 = lat1 * Math.PI / 180, p2 = lat2 * Math.PI / 180;
+        const dp = (lat2 - lat1) * Math.PI / 180, dl = (lon2 - lon1) * Math.PI / 180;
+        const a = Math.sin(dp/2)**2 + Math.cos(p1) * Math.cos(p2) * Math.sin(dl/2)**2;
+        return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    }
+
+    function switchScreen(screenId) {
+        document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+        document.getElementById(screenId).classList.add('active');
+
+        if (screenId === 'screen-nav' && mapNav) {
+            setTimeout(() => mapNav.invalidateSize(), 150);
+        }
+        if (screenId === 'screen-fullmap' && mapFull) {
+            setTimeout(() => mapFull.invalidateSize(), 150);
+        }
+    }
+
+    function toggleTheme() {
+        const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+        if (isDark) {
+            document.documentElement.removeAttribute('data-theme');
+            document.getElementById('theme-toggle').innerHTML = '<i class="fas fa-moon"></i>';
+        } else {
+            document.documentElement.setAttribute('data-theme', 'dark');
+            document.getElementById('theme-toggle').innerHTML = '<i class="fas fa-sun"></i>';
+        }
+    }
+
+    function toast(msg) {
+        const t = document.getElementById('toast');
+        t.textContent = msg;
+        t.classList.add('show');
+        setTimeout(() => t.classList.remove('show'), 2400);
+    }
+
+    /* ============================================================
+       INICIALIZAÇÃO AO CARREGAR
+       ============================================================ */
+    window.onload = () => {
+        initMaps();
+        setupPopular();
+        renderFullmapLegend();
+    };
+</script>
+</body>
+</html>
